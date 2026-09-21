@@ -938,6 +938,7 @@ select.inp{
 }
 
 </style>
+<link rel="stylesheet" href="./assets/workspace.css">
 </head>
 <body>
 
@@ -2225,7 +2226,7 @@ const Router = {
     $('#s-auth').removeAttribute('data-on');
     $('#s-app').setAttribute('data-on', '');
     this.to('draft');
-    if (!App.hasKey()) setTimeout(() => Keys.open(), 500);
+    // Editing and importing do not require an AI key; request one only for AI actions.
   },
 
   showAuth(mode){
@@ -2479,8 +2480,8 @@ const Draft = {
 
     const system =
       'You are Frank, a senior Israeli commercial lawyer drafting for a practising attorney. ' +
-      'Produce a complete, execution-ready agreement. Never leave bracketed placeholders — where a ' +
-      'detail is missing, draft the market-standard position and carry on. Number clauses. ' +
+      'Produce a complete, execution-ready agreement. Use clear bracketed placeholders for missing names, dates, amounts or other facts. Where a ' +
+      'commercial position is unspecified, mark it as a proposal for attorney review; never invent facts. Number clauses. ' +
       'Include definitions, the operative clauses, boilerplate (notices, governing law, jurisdiction, ' +
       'entire agreement, amendment, severability) and a signature block. ' +
       (law === 'Israeli'
@@ -3621,5 +3622,8 @@ async function boot(){
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
 else boot();
 </script>
+<script src="./assets/vendor/mammoth.browser.min.js"></script>
+<script src="./assets/vendor/docx.js"></script>
+<script src="./assets/workspace.js"></script>
 </body>
 </html>
