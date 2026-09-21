@@ -1,0 +1,3596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PRA Legal — AI paralegal for Israeli practice</title>
+
+<meta name="description" content="Draft agreements, read contracts, run matters. An AI paralegal built for Israeli legal practice, in Hebrew and English.">
+<meta name="theme-color" content="#14120F">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta property="og:type" content="website">
+<meta property="og:title" content="PRA Legal — AI paralegal for Israeli practice">
+<meta property="og:description" content="Draft agreements, read contracts, run matters. Hebrew and English.">
+<meta property="og:site_name" content="PRA Legal">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%231C3B30'/><path d='M32 14v36M20 22h24M24 50h16' stroke='%23F6F3EC' stroke-width='3.4' stroke-linecap='round'/></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300;1,6..72,400&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+/* ═══════════════════════════════════════════════════════════
+   TOKENS
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  /* Palette — legal ledger: printer's ink, foolscap paper, court green, seal brass */
+  --ink:        #14120F;
+  --ink-2:      #211E1A;
+  --ink-3:      #302B25;
+  --foolscap:   #F6F3EC;
+  --paper:      #FFFDF8;
+  --ledger:     #1C3B30;
+  --ledger-lt:  #2E5A4A;
+  --brass:      #A8813F;
+  --brass-lt:   #C9A25B;
+  --graphite:   #57524B;
+  --rule:       #D6D0C4;
+  --rule-dk:    #35302A;
+  --alarm:      #9B3A2E;
+
+  /* Semantic — light surface (default for reading work) */
+  --bg:         var(--foolscap);
+  --surface:    var(--paper);
+  --text:       var(--ink);
+  --text-2:     var(--graphite);
+  --text-3:     #8A837A;
+  --line:       var(--rule);
+  --accent:     var(--ledger);
+
+  /* Type */
+  --serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
+  --sans:  'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Scale — 1.25 minor third off 16px */
+  --t-xs:   12px;
+  --t-sm:   13.5px;
+  --t-base: 15px;
+  --t-md:   17px;
+  --t-lg:   21px;
+  --t-xl:   28px;
+  --t-2xl:  38px;
+  --t-3xl:  clamp(40px, 6.5vw, 82px);
+
+  /* Space — 4px base */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 24px; --s6: 32px; --s7: 48px; --s8: 64px; --s9: 96px;
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 18px;
+
+  --shadow-lift: 0 1px 2px rgba(20,18,15,.05), 0 12px 32px -12px rgba(20,18,15,.18);
+  --shadow-drop: 0 24px 70px -20px rgba(20,18,15,.38);
+
+  --rail-w: 60px;
+  --ease: cubic-bezier(.22,.61,.36,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+* { margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body{
+  font-family: var(--sans);
+  font-size: var(--t-base);
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
+}
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; cursor: pointer; }
+a { color: inherit; }
+
+:focus-visible{
+  outline: 2px solid var(--ledger);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+::selection { background: rgba(28,59,48,.16); }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(87,82,75,.2); border-radius: 99px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(87,82,75,.36); background-clip: content-box; }
+
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
+/* ── Screens ─────────────────────────────────────────────── */
+.screen{ position: fixed; inset: 0; display: none; }
+.screen[data-on]{ display: block; }
+#s-app[data-on]{ display: grid; }
+
+/* ═══════════════════════════════════════════════════════════
+   LANDING
+   ═══════════════════════════════════════════════════════════ */
+#s-land{ overflow-y: auto; overflow-x: hidden; background: var(--ink); color: var(--foolscap); }
+
+.masthead{
+  position: fixed; top: 0; left: 0; right: 0; z-index: 60;
+  display: flex; align-items: center; gap: var(--s5);
+  padding: 18px clamp(20px, 4vw, 52px);
+  transition: background .4s var(--ease), border-color .4s var(--ease);
+  border-bottom: 1px solid transparent;
+}
+.masthead[data-stuck]{
+  background: rgba(20,18,15,.84);
+  backdrop-filter: blur(20px) saturate(140%);
+  border-bottom-color: rgba(246,243,236,.1);
+}
+.wordmark{ display: flex; align-items: baseline; gap: 9px; margin-right: auto; }
+.wordmark b{ font-family: var(--serif); font-weight: 400; font-size: 23px; letter-spacing: -.015em; }
+.wordmark i{ font-style: normal; font-size: 11px; letter-spacing: .1em; color: rgba(246,243,236,.42); }
+.mast-link{ font-size: var(--t-sm); color: rgba(246,243,236,.62); padding: 7px 2px; transition: color .18s; text-decoration: none; }
+.mast-link:hover{ color: var(--foolscap); }
+
+/* Stage — layered cross-dissolving panels behind the hero */
+.stage{ position: absolute; inset: 0; overflow: hidden; z-index: 0; }
+.stage-panel{
+  position: absolute; inset: 0;
+  opacity: 0;
+  transition: opacity 1.9s var(--ease);
+  background-size: cover; background-position: center;
+  will-change: opacity, transform;
+}
+.stage-panel[data-live]{ opacity: 1; }
+.stage-panel[data-live] .stage-img{ animation: drift 15s linear forwards; }
+.stage-img{ position: absolute; inset: -4%; background-size: cover; background-position: center; }
+@keyframes drift{ from{ transform: scale(1.02) translate3d(0,0,0); } to{ transform: scale(1.11) translate3d(-1.2%, -1.6%, 0); } }
+.stage-veil{
+  position: absolute; inset: 0; z-index: 2;
+  background:
+    linear-gradient(180deg, rgba(20,18,15,.76) 0%, rgba(20,18,15,.52) 42%, rgba(20,18,15,.94) 100%),
+    linear-gradient(96deg, rgba(20,18,15,.9) 0%, rgba(20,18,15,.34) 62%, transparent 100%);
+}
+.stage-grain{
+  position: absolute; inset: 0; z-index: 3; opacity: .05; pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+.hero{
+  position: relative; z-index: 4;
+  min-height: 100svh;
+  display: grid; align-content: end;
+  padding: 0 clamp(20px, 4vw, 52px) clamp(48px, 7vh, 88px);
+  grid-template-columns: minmax(0, 1fr);
+}
+.hero-inner{ max-width: 1360px; width: 100%; margin: 0 auto; }
+
+.hero-eyebrow{
+  display: flex; align-items: center; gap: 10px;
+  font-size: var(--t-xs); color: rgba(246,243,236,.5);
+  margin-bottom: var(--s5);
+}
+.pip{ width: 5px; height: 5px; border-radius: 50%; background: var(--brass-lt); flex: none; }
+
+.hero h1{
+  font-family: var(--serif);
+  font-weight: 300;
+  font-size: var(--t-3xl);
+  line-height: .98;
+  letter-spacing: -.028em;
+  max-width: 14.5ch;
+  margin-bottom: var(--s5);
+}
+.hero h1 em{ font-style: italic; font-weight: 300; }
+
+.hero-say{
+  position: relative;
+  min-height: 3.4em;
+  max-width: 46ch;
+  font-size: var(--t-md);
+  line-height: 1.7;
+  color: rgba(246,243,236,.66);
+}
+.say{ position: absolute; inset: 0; opacity: 0; transition: opacity .7s var(--ease), transform .7s var(--ease); transform: translateY(7px); }
+.say[data-live]{ opacity: 1; transform: none; }
+
+.hero-cta{ display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s6); }
+
+.btn{
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px 26px; border-radius: 99px;
+  font-size: var(--t-sm); font-weight: 600; letter-spacing: -.005em;
+  transition: transform .16s var(--ease), background .2s, border-color .2s, color .2s;
+  white-space: nowrap; text-decoration: none;
+}
+.btn:active{ transform: scale(.975); }
+.btn-solid{ background: var(--foolscap); color: var(--ink); }
+.btn-solid:hover{ background: #fff; }
+.btn-ghost{ border: 1px solid rgba(246,243,236,.26); color: rgba(246,243,236,.88); }
+.btn-ghost:hover{ border-color: rgba(246,243,236,.56); background: rgba(246,243,236,.06); }
+.btn-green{ background: var(--ledger); color: var(--foolscap); }
+.btn-green:hover{ background: var(--ledger-lt); }
+
+/* Stage scrubber */
+.scrub{ display: flex; gap: 7px; margin-top: var(--s7); }
+.scrub button{
+  width: 46px; height: 2px; border-radius: 2px;
+  background: rgba(246,243,236,.2); position: relative; overflow: hidden;
+  transition: background .3s;
+}
+.scrub button::after{
+  content: ''; position: absolute; inset: 0; width: 0;
+  background: var(--brass-lt);
+}
+.scrub button[data-live]::after{ animation: fill 7s linear forwards; }
+@keyframes fill{ to{ width: 100%; } }
+
+/* Landing body */
+.sheet{ position: relative; z-index: 4; background: var(--foolscap); color: var(--ink); }
+.band{ padding: clamp(64px, 10vh, 132px) clamp(20px, 4vw, 52px); max-width: 1360px; margin: 0 auto; }
+.band + .band{ border-top: 1px solid var(--rule); }
+
+.band-head{ max-width: 34ch; margin-bottom: var(--s8); }
+.band-head h2{
+  font-family: var(--serif); font-weight: 400;
+  font-size: var(--t-2xl); line-height: 1.08; letter-spacing: -.022em;
+  margin-bottom: var(--s3);
+}
+.band-head p{ color: var(--text-2); font-size: var(--t-md); line-height: 1.65; }
+
+/* Capability list — rules, not cards */
+.caps{ display: grid; grid-template-columns: repeat(auto-fit, minmax(270px, 1fr)); gap: 0; }
+.cap{
+  padding: var(--s6) var(--s5) var(--s6) 0;
+  border-top: 1px solid var(--rule);
+}
+.cap h3{ font-size: var(--t-md); font-weight: 600; margin-bottom: 7px; letter-spacing: -.01em; }
+.cap p{ font-size: var(--t-sm); color: var(--text-2); line-height: 1.68; max-width: 38ch; }
+.cap-mark{
+  width: 30px; height: 30px; margin-bottom: var(--s4);
+  display: grid; place-items: center;
+  border: 1px solid var(--rule); border-radius: var(--r-sm);
+  color: var(--ledger);
+}
+.cap-mark svg{ width: 15px; height: 15px; }
+
+/* Pricing */
+.tiers{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--s5); }
+.tier{
+  border: 1px solid var(--rule); border-radius: var(--r-lg);
+  padding: var(--s6) var(--s5);
+  background: var(--paper);
+  display: flex; flex-direction: column;
+}
+.tier[data-feature]{ border-color: var(--ledger); border-width: 1.5px; }
+.tier-name{ font-size: var(--t-sm); font-weight: 600; color: var(--text-2); margin-bottom: var(--s4); }
+.tier-cost{ font-family: var(--serif); font-size: 42px; font-weight: 400; line-height: 1; letter-spacing: -.03em; }
+.tier-cost small{ font-family: var(--sans); font-size: var(--t-sm); font-weight: 400; color: var(--text-3); letter-spacing: 0; }
+.tier-note{ font-size: var(--t-xs); color: var(--text-3); margin: 9px 0 var(--s5); }
+.tier ul{ list-style: none; display: grid; gap: 9px; margin-bottom: var(--s5); }
+.tier li{ font-size: var(--t-sm); color: var(--text-2); padding-left: 19px; position: relative; line-height: 1.5; }
+.tier li::before{ content: ''; position: absolute; left: 0; top: .58em; width: 9px; height: 1px; background: var(--ledger); }
+.tier .btn{ margin-top: auto; width: 100%; }
+.btn-outline{ border: 1px solid var(--ink); color: var(--ink); }
+.btn-outline:hover{ background: var(--ink); color: var(--foolscap); }
+
+.colophon{
+  border-top: 1px solid var(--rule);
+  padding: var(--s6) clamp(20px, 4vw, 52px);
+  font-size: var(--t-xs); color: var(--text-3); line-height: 1.8;
+  max-width: 1360px; margin: 0 auto;
+}
+.colophon strong{ color: var(--text-2); font-weight: 500; }
+
+@media (max-width: 720px){
+  .hero h1{ max-width: 100%; }
+  .mast-link[data-desk]{ display: none; }
+  .cap{ padding-right: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   APP SHELL — collapsed rail + single canvas + summoned drawer
+   ═══════════════════════════════════════════════════════════ */
+#s-app{
+  grid-template-columns: var(--rail-w) minmax(0, 1fr);
+  height: 100vh; height: 100dvh;
+  background: var(--bg);
+}
+
+/* ── Rail: icons only. Labels appear on hover. ── */
+.rail{
+  grid-column: 1;
+  display: flex; flex-direction: column; align-items: center;
+  gap: var(--s1);
+  padding: var(--s3) 0 calc(var(--s3) + env(safe-area-inset-bottom, 0px));
+  background: var(--ink);
+  border-right: 1px solid var(--rule-dk);
+  z-index: 30;
+}
+.rail-seal{
+  width: 34px; height: 34px; border-radius: 9px;
+  background: var(--ledger); color: var(--foolscap);
+  display: grid; place-items: center; flex: none;
+  margin-bottom: var(--s4);
+  font-family: var(--serif); font-size: 17px;
+}
+.rail-btn{
+  position: relative;
+  width: 40px; height: 40px; border-radius: var(--r-md);
+  display: grid; place-items: center;
+  color: rgba(246,243,236,.44);
+  transition: color .16s, background .16s;
+  flex: none;
+}
+.rail-btn svg{ width: 19px; height: 19px; }
+.rail-btn:hover{ color: rgba(246,243,236,.82); background: rgba(246,243,236,.07); }
+.rail-btn[data-on]{ color: var(--foolscap); background: rgba(246,243,236,.12); }
+.rail-btn[data-on]::before{
+  content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
+  width: 2px; height: 17px; border-radius: 2px; background: var(--brass-lt);
+}
+.rail-btn[data-tip]:hover::after{
+  content: attr(data-tip);
+  position: absolute; left: calc(100% + 10px); top: 50%; transform: translateY(-50%);
+  background: var(--ink-3); color: var(--foolscap);
+  padding: 6px 11px; border-radius: var(--r-sm);
+  font-size: var(--t-xs); white-space: nowrap; z-index: 80;
+  box-shadow: var(--shadow-lift);
+  border: 1px solid var(--rule-dk);
+}
+.rail-count{
+  position: absolute; top: 4px; right: 4px;
+  min-width: 15px; height: 15px; padding: 0 4px;
+  border-radius: 99px; background: var(--brass);
+  color: var(--ink); font-size: 9.5px; font-weight: 700;
+  display: none; align-items: center; justify-content: center;
+}
+.rail-count[data-show]{ display: flex; }
+.rail-gap{ margin-top: auto; }
+
+/* ── Canvas ── */
+.canvas{
+  grid-column: 2;
+  display: grid; grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0; position: relative;
+}
+
+.topbar{
+  display: flex; align-items: center; gap: var(--s3);
+  padding: 0 var(--s5); height: 54px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg);
+  z-index: 20;
+}
+.crumb{ font-size: var(--t-sm); color: var(--text-3); }
+.crumb b{ color: var(--text); font-weight: 600; }
+.topbar-fill{ margin-left: auto; }
+
+.kbtn{
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 32px; padding: 0 12px;
+  border: 1px solid var(--line); border-radius: 99px;
+  font-size: var(--t-sm); color: var(--text-2);
+  transition: border-color .16s, color .16s, background .16s;
+}
+.kbtn:hover{ border-color: var(--text-3); color: var(--text); }
+.kbtn svg{ width: 15px; height: 15px; }
+kbd{
+  font-family: var(--sans); font-size: 10.5px; font-weight: 600;
+  padding: 2px 5px; border-radius: 4px;
+  background: rgba(20,18,15,.06); color: var(--text-3);
+  border: 1px solid var(--line);
+}
+
+.view{ display: none; min-height: 0; overflow: hidden; }
+.view[data-on]{ display: grid; }
+.scroller{ overflow-y: auto; overscroll-behavior: contain; min-height: 0; }
+.pad{ padding: var(--s7) clamp(20px, 5vw, 64px) var(--s9); }
+.measure{ max-width: 760px; margin: 0 auto; }
+.measure-wide{ max-width: 1080px; margin: 0 auto; }
+
+/* Section heads inside app */
+.vhead{ margin-bottom: var(--s6); }
+.vhead h2{
+  font-family: var(--serif); font-weight: 400;
+  font-size: var(--t-xl); letter-spacing: -.02em; line-height: 1.15;
+  margin-bottom: 5px;
+}
+.vhead p{ font-size: var(--t-sm); color: var(--text-2); max-width: 54ch; line-height: 1.6; }
+
+/* ── Forms ── */
+.field{ margin-bottom: var(--s4); }
+.field > label{
+  display: block; font-size: var(--t-sm); font-weight: 500;
+  color: var(--text-2); margin-bottom: 6px;
+}
+.field-hint{ font-size: var(--t-xs); color: var(--text-3); margin-top: 5px; line-height: 1.5; }
+.inp{
+  width: 100%; padding: 11px 13px;
+  background: var(--surface);
+  border: 1px solid var(--line); border-radius: var(--r-md);
+  font-size: var(--t-base); color: var(--text);
+  transition: border-color .16s, box-shadow .16s;
+  -webkit-appearance: none; appearance: none;
+}
+.inp:focus{ outline: 0; border-color: var(--ledger); box-shadow: 0 0 0 3px rgba(28,59,48,.11); }
+.inp::placeholder{ color: var(--text-3); }
+textarea.inp{ resize: vertical; min-height: 84px; line-height: 1.6; }
+select.inp{
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%238A837A' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 13px center; padding-right: 34px;
+}
+.row2{ display: grid; grid-template-columns: 1fr 1fr; gap: var(--s3); }
+@media (max-width: 620px){ .row2{ grid-template-columns: 1fr; } }
+
+.chips{ display: flex; flex-wrap: wrap; gap: 7px; }
+.chip{
+  padding: 7px 14px; border-radius: 99px;
+  border: 1px solid var(--line); background: var(--surface);
+  font-size: var(--t-sm); color: var(--text-2);
+  transition: all .14s;
+}
+.chip:hover{ border-color: var(--text-3); }
+.chip[data-on]{ background: var(--ledger); border-color: var(--ledger); color: var(--foolscap); }
+
+.divider{ height: 1px; background: var(--line); margin: var(--s6) 0; }
+
+.legend{
+  font-size: var(--t-sm); font-weight: 600; color: var(--text);
+  padding-bottom: 9px; margin: var(--s6) 0 var(--s4);
+  border-bottom: 1px solid var(--line);
+}
+.legend:first-child{ margin-top: 0; }
+
+/* ── Picker grid (agreement types) ── */
+.picker{ display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--s3); }
+.pick{
+  text-align: left; padding: var(--s4);
+  border: 1px solid var(--line); border-radius: var(--r-md);
+  background: var(--surface);
+  transition: border-color .15s, transform .15s var(--ease), box-shadow .15s;
+  position: relative;
+}
+.pick:hover{ border-color: var(--ledger); transform: translateY(-2px); box-shadow: var(--shadow-lift); }
+.pick[data-on]{ border-color: var(--ledger); border-width: 1.5px; padding: calc(var(--s4) - 1px); }
+.pick[data-on]::after{
+  content: ''; position: absolute; top: 12px; right: 12px;
+  width: 7px; height: 7px; border-radius: 50%; background: var(--ledger);
+}
+.pick b{ display: block; font-size: var(--t-sm); font-weight: 600; margin-bottom: 4px; }
+.pick span{ display: block; font-size: var(--t-xs); color: var(--text-3); line-height: 1.5; }
+.pick-mark{ color: var(--ledger); margin-bottom: 11px; display: block; }
+.pick-mark svg{ width: 18px; height: 18px; }
+
+/* ── Document surface ── */
+.doc-wrap{ display: grid; grid-template-rows: auto minmax(0,1fr); min-height: 0; }
+.doc-bar{
+  display: flex; align-items: center; gap: var(--s2);
+  padding: 9px var(--s5);
+  border-bottom: 1px solid var(--line);
+  background: var(--bg); flex-wrap: wrap;
+}
+.tool{
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 30px; padding: 0 11px; border-radius: var(--r-sm);
+  font-size: var(--t-sm); color: var(--text-2);
+  transition: background .14s, color .14s;
+}
+.tool:hover{ background: rgba(20,18,15,.05); color: var(--text); }
+.tool svg{ width: 14px; height: 14px; }
+.tool[data-on]{ background: var(--ledger); color: var(--foolscap); }
+.tool-sep{ width: 1px; height: 18px; background: var(--line); margin: 0 5px; }
+
+.sheet-doc{
+  background: var(--paper);
+  max-width: 820px; margin: var(--s6) auto var(--s9);
+  padding: clamp(32px, 6vw, 68px);
+  border: 1px solid var(--line); border-radius: 3px;
+  box-shadow: var(--shadow-lift);
+  font-family: var(--serif); font-size: 16px; line-height: 1.78;
+  color: var(--ink);
+}
+.sheet-doc[contenteditable="true"]{ outline: 2px solid var(--ledger); outline-offset: 10px; }
+.sheet-doc h1{ font-size: 26px; font-weight: 400; text-align: center; margin-bottom: var(--s6); letter-spacing: -.015em; }
+.sheet-doc h2{ font-size: 17px; font-weight: 500; margin: var(--s6) 0 var(--s3); letter-spacing: -.005em; }
+.sheet-doc h3{ font-size: 15.5px; font-weight: 500; margin: var(--s5) 0 var(--s2); }
+.sheet-doc p{ margin-bottom: var(--s3); }
+.sheet-doc ul, .sheet-doc ol{ margin: 0 0 var(--s3) var(--s5); }
+.sheet-doc li{ margin-bottom: 5px; }
+.sheet-doc strong{ font-weight: 600; }
+.sheet-doc table{ width: 100%; border-collapse: collapse; margin: var(--s4) 0; font-family: var(--sans); font-size: 13px; }
+.sheet-doc th, .sheet-doc td{ border: 1px solid var(--line); padding: 7px 10px; text-align: left; }
+.sheet-doc th{ background: rgba(20,18,15,.035); font-weight: 600; }
+.sheet-doc[dir="rtl"]{ text-align: right; }
+.sheet-doc[dir="rtl"] ul, .sheet-doc[dir="rtl"] ol{ margin: 0 var(--s5) var(--s3) 0; }
+
+/* ── Empty states ── */
+.empty{
+  display: grid; place-items: center; text-align: center;
+  padding: var(--s9) var(--s5); gap: var(--s3);
+}
+.empty-mark{ color: var(--text-3); opacity: .5; }
+.empty-mark svg{ width: 36px; height: 36px; }
+.empty h3{ font-family: var(--serif); font-size: var(--t-lg); font-weight: 400; letter-spacing: -.015em; }
+.empty p{ font-size: var(--t-sm); color: var(--text-2); max-width: 40ch; line-height: 1.65; }
+
+/* ── Records (matters, clients) ── */
+.records{ display: grid; gap: var(--s3); }
+.record{
+  border: 1px solid var(--line); border-radius: var(--r-md);
+  background: var(--surface); padding: var(--s4) var(--s5);
+  text-align: left; width: 100%;
+  transition: border-color .15s, box-shadow .15s;
+}
+.record:hover{ border-color: var(--text-3); box-shadow: var(--shadow-lift); }
+.record-top{ display: flex; align-items: flex-start; gap: var(--s3); margin-bottom: 9px; }
+.record-mark{
+  width: 34px; height: 34px; border-radius: 8px; flex: none;
+  background: var(--ledger); color: var(--foolscap);
+  display: grid; place-items: center;
+  font-size: var(--t-sm); font-weight: 600;
+}
+.record-id{ flex: 1; min-width: 0; }
+.record-id b{ display: block; font-size: var(--t-base); font-weight: 600; letter-spacing: -.008em; }
+.record-id span{ display: block; font-size: var(--t-xs); color: var(--text-3); margin-top: 2px; }
+.record p{ font-size: var(--t-sm); color: var(--text-2); line-height: 1.6; }
+.record-foot{ display: flex; align-items: center; gap: var(--s3); margin-top: var(--s3); padding-top: var(--s3); border-top: 1px solid var(--line); flex-wrap: wrap; }
+
+.tag{ font-size: var(--t-xs); padding: 3px 9px; border-radius: 99px; background: rgba(20,18,15,.05); color: var(--text-2); }
+.tag[data-tone="urgent"]{ background: rgba(155,58,46,.1); color: var(--alarm); }
+.tag[data-tone="done"]{ background: rgba(28,59,48,.1); color: var(--ledger); }
+.tag[data-tone="brass"]{ background: rgba(168,129,63,.13); color: #7A5C28; }
+
+.meter{ height: 3px; border-radius: 3px; background: rgba(20,18,15,.07); overflow: hidden; flex: 1; min-width: 70px; }
+.meter i{ display: block; height: 100%; background: var(--ledger); border-radius: 3px; transition: width .4s var(--ease); }
+
+.tick{
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 8px 0; font-size: var(--t-sm); line-height: 1.55;
+  border-bottom: 1px solid var(--line);
+}
+.tick:last-child{ border-bottom: 0; }
+.tick-box{
+  width: 16px; height: 16px; border-radius: 4px; flex: none; margin-top: 2px;
+  border: 1.5px solid var(--text-3);
+  display: grid; place-items: center; cursor: pointer;
+  transition: all .14s;
+}
+.tick-box:hover{ border-color: var(--ledger); }
+.tick-box[data-done]{ background: var(--ledger); border-color: var(--ledger); }
+.tick-box[data-done]::after{ content: ''; width: 8px; height: 4px; border-left: 1.6px solid var(--foolscap); border-bottom: 1.6px solid var(--foolscap); transform: rotate(-45deg) translate(1px,-1px); }
+.tick[data-done] .tick-text{ color: var(--text-3); text-decoration: line-through; }
+.tick-text{ flex: 1; }
+.tick-when{ font-size: var(--t-xs); color: var(--brass); flex: none; }
+
+/* ═══════════════════════════════════════════════════════════
+   DRAWER — Frank is summoned, not permanently docked
+   ═══════════════════════════════════════════════════════════ */
+.scrim{
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(20,18,15,0); pointer-events: none;
+  transition: background .3s var(--ease);
+}
+.scrim[data-on]{ background: rgba(20,18,15,.42); pointer-events: auto; }
+
+.drawer{
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 95;
+  width: min(460px, 94vw);
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  box-shadow: var(--shadow-drop);
+  transform: translateX(102%);
+  transition: transform .34s var(--ease);
+  display: grid; grid-template-rows: auto minmax(0,1fr) auto;
+}
+.drawer[data-on]{ transform: none; }
+
+.drawer-head{
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s4) var(--s5);
+  border-bottom: 1px solid var(--line);
+}
+.frank-seal{
+  width: 34px; height: 34px; border-radius: 10px; flex: none;
+  background: var(--ledger); color: var(--foolscap);
+  display: grid; place-items: center; position: relative;
+  font-family: var(--serif); font-size: 16px;
+}
+.frank-seal::after{
+  content: ''; position: absolute; bottom: -1px; right: -1px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--brass-lt); border: 2px solid var(--surface);
+}
+.drawer-head b{ display: block; font-size: var(--t-base); font-weight: 600; letter-spacing: -.008em; }
+.drawer-head span{ display: block; font-size: var(--t-xs); color: var(--text-3); }
+.icon-btn{
+  width: 32px; height: 32px; border-radius: var(--r-sm);
+  display: grid; place-items: center; color: var(--text-3);
+  transition: background .14s, color .14s; flex: none;
+}
+.icon-btn:hover{ background: rgba(20,18,15,.06); color: var(--text); }
+.icon-btn svg{ width: 16px; height: 16px; }
+
+.thread{ overflow-y: auto; padding: var(--s5); display: flex; flex-direction: column; gap: var(--s4); overscroll-behavior: contain; }
+
+.turn{ display: flex; flex-direction: column; gap: 5px; max-width: 94%; }
+.turn[data-by="me"]{ align-self: flex-end; align-items: flex-end; }
+.bubble{
+  padding: 11px 15px; border-radius: 14px;
+  font-size: var(--t-sm); line-height: 1.62;
+  word-wrap: break-word; overflow-wrap: break-word;
+}
+.turn[data-by="me"] .bubble{ background: var(--ledger); color: var(--foolscap); border-bottom-right-radius: 5px; }
+.turn[data-by="frank"] .bubble{ background: rgba(20,18,15,.045); border-bottom-left-radius: 5px; }
+.bubble p{ margin-bottom: 9px; } .bubble p:last-child{ margin-bottom: 0; }
+.bubble ul, .bubble ol{ margin: 0 0 9px 17px; } .bubble li{ margin-bottom: 4px; }
+.bubble strong{ font-weight: 600; }
+.bubble code{ font-size: 12.5px; background: rgba(20,18,15,.07); padding: 1px 5px; border-radius: 4px; }
+.turn-when{ font-size: 10.5px; color: var(--text-3); padding: 0 4px; }
+
+.dots{ display: flex; gap: 4px; padding: 5px 2px; }
+.dots i{ width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); animation: bob 1.3s infinite; }
+.dots i:nth-child(2){ animation-delay: .18s; } .dots i:nth-child(3){ animation-delay: .36s; }
+@keyframes bob{ 0%,60%,100%{ opacity: .28; transform: none; } 30%{ opacity: 1; transform: translateY(-4px); } }
+
+.notice{
+  border: 1px solid rgba(155,58,46,.28); background: rgba(155,58,46,.06);
+  border-radius: var(--r-md); padding: 13px 15px;
+  font-size: var(--t-sm); line-height: 1.6;
+}
+.notice b{ display: block; color: var(--alarm); margin-bottom: 4px; font-weight: 600; }
+.notice .btn{ margin-top: 11px; padding: 8px 16px; font-size: var(--t-xs); }
+
+.suggests{ display: flex; flex-wrap: wrap; gap: 7px; }
+.suggest{
+  padding: 8px 13px; border-radius: 99px;
+  border: 1px solid var(--line); background: var(--surface);
+  font-size: var(--t-xs); color: var(--text-2);
+  transition: all .14s; text-align: left;
+}
+.suggest:hover{ border-color: var(--ledger); color: var(--ledger); }
+
+.composer{ padding: var(--s3) var(--s5) calc(var(--s4) + env(safe-area-inset-bottom,0px)); border-top: 1px solid var(--line); }
+.composer-box{
+  display: flex; align-items: flex-end; gap: 8px;
+  border: 1px solid var(--line); border-radius: var(--r-lg);
+  padding: 7px 7px 7px 15px; background: var(--bg);
+  transition: border-color .16s, box-shadow .16s;
+}
+.composer-box:focus-within{ border-color: var(--ledger); box-shadow: 0 0 0 3px rgba(28,59,48,.1); }
+.composer-box textarea{
+  flex: 1; border: 0; background: none; resize: none;
+  font-size: var(--t-sm); line-height: 1.55; max-height: 132px; padding: 6px 0;
+  font-family: var(--sans);
+}
+.composer-box textarea:focus{ outline: 0; }
+.send{
+  width: 32px; height: 32px; border-radius: 50%; flex: none;
+  background: var(--ledger); color: var(--foolscap);
+  display: grid; place-items: center;
+  transition: background .16s, opacity .16s;
+}
+.send:hover{ background: var(--ledger-lt); }
+.send:disabled{ opacity: .3; cursor: default; }
+.send svg{ width: 15px; height: 15px; }
+.composer-note{ font-size: 10.5px; color: var(--text-3); text-align: center; margin-top: 8px; }
+
+/* ═══════════════════════════════════════════════════════════
+   COMMAND PALETTE — the main way to reach everything
+   ═══════════════════════════════════════════════════════════ */
+.palette-scrim{
+  position: fixed; inset: 0; z-index: 110;
+  background: rgba(20,18,15,.5);
+  backdrop-filter: blur(3px);
+  display: none; align-items: flex-start; justify-content: center;
+  padding: clamp(60px, 14vh, 150px) var(--s4) var(--s4);
+}
+.palette-scrim[data-on]{ display: flex; }
+.palette{
+  width: min(600px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--line); border-radius: 15px;
+  box-shadow: var(--shadow-drop);
+  overflow: hidden;
+  animation: palette-in .2s var(--ease);
+}
+@keyframes palette-in{ from{ opacity: 0; transform: translateY(-9px) scale(.985); } }
+.palette-search{
+  display: flex; align-items: center; gap: 11px;
+  padding: 15px 19px; border-bottom: 1px solid var(--line);
+}
+.palette-search svg{ width: 17px; height: 17px; color: var(--text-3); flex: none; }
+.palette-search input{
+  flex: 1; border: 0; background: none; font-size: var(--t-md);
+  letter-spacing: -.008em;
+}
+.palette-search input:focus{ outline: 0; }
+.palette-search input::placeholder{ color: var(--text-3); }
+.palette-list{ max-height: min(390px, 52vh); overflow-y: auto; padding: 7px; }
+.palette-group{
+  font-size: 10.5px; font-weight: 600; color: var(--text-3);
+  padding: 10px 12px 5px;
+}
+.palette-item{
+  display: flex; align-items: center; gap: 12px;
+  width: 100%; padding: 10px 12px; border-radius: 9px;
+  text-align: left; transition: background .1s;
+}
+.palette-item[data-cursor]{ background: rgba(28,59,48,.09); }
+.palette-item-mark{ width: 17px; color: var(--text-3); flex: none; display: grid; place-items: center; }
+.palette-item-mark svg{ width: 16px; height: 16px; }
+.palette-item[data-cursor] .palette-item-mark{ color: var(--ledger); }
+.palette-item b{ font-size: var(--t-sm); font-weight: 500; display: block; }
+.palette-item span{ font-size: var(--t-xs); color: var(--text-3); display: block; margin-top: 1px; }
+.palette-item kbd{ margin-left: auto; flex: none; }
+.palette-foot{
+  display: flex; align-items: center; gap: var(--s4);
+  padding: 9px 19px; border-top: 1px solid var(--line);
+  font-size: 10.5px; color: var(--text-3);
+  background: var(--bg);
+}
+.palette-foot span{ display: flex; align-items: center; gap: 5px; }
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL + TOAST
+   ═══════════════════════════════════════════════════════════ */
+.modal-scrim{
+  position: fixed; inset: 0; z-index: 120;
+  background: rgba(20,18,15,.55); backdrop-filter: blur(3px);
+  display: none; align-items: center; justify-content: center; padding: var(--s4);
+}
+.modal-scrim[data-on]{ display: flex; }
+.modal{
+  width: min(520px, 100%); max-height: 88vh; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 17px; box-shadow: var(--shadow-drop);
+  animation: palette-in .2s var(--ease);
+}
+.modal-head{
+  display: flex; align-items: flex-start; gap: var(--s3);
+  padding: var(--s5) var(--s5) var(--s4);
+  border-bottom: 1px solid var(--line);
+}
+.modal-head h3{ font-family: var(--serif); font-size: var(--t-lg); font-weight: 400; letter-spacing: -.015em; flex: 1; }
+.modal-head p{ font-size: var(--t-xs); color: var(--text-3); margin-top: 3px; }
+.modal-body{ padding: var(--s5); }
+.modal-foot{ padding: 0 var(--s5) var(--s5); display: flex; gap: 9px; }
+.modal-foot .btn{ flex: 1; padding: 12px 20px; }
+
+.key-row{
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s4) 0; border-bottom: 1px solid var(--line);
+}
+.key-row:last-of-type{ border-bottom: 0; }
+.key-mark{
+  width: 34px; height: 34px; border-radius: 9px; flex: none;
+  display: grid; place-items: center; color: var(--foolscap);
+}
+.key-info{ flex: 1; min-width: 0; }
+.key-info b{ display: block; font-size: var(--t-sm); font-weight: 600; }
+.key-info span{ display: block; font-size: var(--t-xs); color: var(--text-3); margin-top: 1px; }
+.key-state{ font-size: var(--t-xs); padding: 3px 10px; border-radius: 99px; flex: none; font-weight: 500; }
+.key-state[data-state="on"]{ background: rgba(28,59,48,.11); color: var(--ledger); }
+.key-state[data-state="off"]{ background: rgba(155,58,46,.1); color: var(--alarm); }
+.key-state[data-state="opt"]{ background: rgba(20,18,15,.05); color: var(--text-3); }
+
+.toast-dock{
+  position: fixed; bottom: var(--s5); left: 50%; transform: translateX(-50%);
+  z-index: 130; display: flex; flex-direction: column; gap: 9px; align-items: center;
+  pointer-events: none;
+}
+.toast{
+  background: var(--ink); color: var(--foolscap);
+  padding: 11px 19px; border-radius: 99px;
+  font-size: var(--t-sm); box-shadow: var(--shadow-drop);
+  display: flex; align-items: center; gap: 9px;
+  animation: toast-in .26s var(--ease);
+  max-width: min(440px, 92vw);
+}
+.toast[data-tone="bad"]{ background: var(--alarm); }
+@keyframes toast-in{ from{ opacity: 0; transform: translateY(13px); } }
+.toast svg{ width: 15px; height: 15px; flex: none; }
+
+/* ── Progress strip while generating ── */
+.strip{
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: rgba(28,59,48,.12); overflow: hidden; display: none; z-index: 25;
+}
+.strip[data-on]{ display: block; }
+.strip::after{
+  content: ''; position: absolute; inset: 0; width: 34%;
+  background: var(--ledger); animation: slide 1.15s infinite var(--ease);
+}
+@keyframes slide{ from{ transform: translateX(-100%); } to{ transform: translateX(400%); } }
+
+.spin{
+  width: 15px; height: 15px; border-radius: 50%;
+  border: 2px solid rgba(20,18,15,.14); border-top-color: var(--ledger);
+  animation: spin .7s linear infinite; flex: none;
+}
+@keyframes spin{ to{ transform: rotate(360deg); } }
+
+/* ── Drop zone ── */
+.drop{
+  border: 1.5px dashed var(--line); border-radius: var(--r-lg);
+  padding: var(--s7) var(--s5); text-align: center;
+  transition: border-color .16s, background .16s;
+  display: grid; gap: var(--s3); place-items: center;
+}
+.drop:hover, .drop[data-over]{ border-color: var(--ledger); background: rgba(28,59,48,.03); }
+.drop svg{ width: 26px; height: 26px; color: var(--text-3); }
+.drop b{ font-size: var(--t-sm); font-weight: 600; }
+.drop span{ font-size: var(--t-xs); color: var(--text-3); }
+
+@media (max-width: 860px){
+  :root{ --rail-w: 54px; }
+  .pad{ padding: var(--s5) var(--s4) var(--s9); }
+  .sheet-doc{ margin: var(--s4) auto var(--s8); padding: var(--s5); }
+  .drawer{ width: 100%; }
+}
+
+@media print{
+  .rail, .topbar, .doc-bar, .drawer, .scrim, .toast-dock{ display: none !important; }
+  body, #s-app, .canvas{ display: block !important; overflow: visible !important; height: auto !important; }
+  .sheet-doc{ box-shadow: none; border: 0; margin: 0; max-width: 100%; padding: 0; }
+  .scroller{ overflow: visible !important; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SIGN IN
+   ═══════════════════════════════════════════════════════════ */
+#s-auth{ background: var(--bg); overflow-y: auto; }
+.auth{ min-height: 100%; display: grid; grid-template-columns: minmax(0,5fr) minmax(0,6fr); }
+.auth-side{
+  position: relative; overflow: hidden;
+  background: var(--ink); color: var(--foolscap);
+  padding: clamp(28px, 5vw, 64px);
+  display: flex; flex-direction: column; justify-content: space-between; gap: var(--s7);
+}
+.auth-side::before{
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(120% 90% at 16% 10%, rgba(46,90,74,.85) 0%, transparent 60%);
+}
+.auth-side > *{ position: relative; }
+.auth-quote{
+  font-family: var(--serif); font-weight: 300;
+  font-size: clamp(28px, 3.2vw, 44px); line-height: 1.1; letter-spacing: -.022em;
+  max-width: 15ch;
+}
+.auth-fine{ font-size: var(--t-xs); color: rgba(246,243,236,.46); max-width: 42ch; line-height: 1.7; }
+.auth-main{
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: var(--s5); padding: var(--s7) var(--s5);
+}
+.auth-form{ width: min(380px, 100%); }
+.auth-form h2{ font-family: var(--serif); font-weight: 400; font-size: var(--t-xl); letter-spacing: -.02em; margin-bottom: 6px; }
+.auth-form > p{ font-size: var(--t-sm); color: var(--text-2); line-height: 1.6; margin-bottom: var(--s5); }
+.auth-form .btn{ width: 100%; padding: 13px; margin-top: var(--s2); }
+.auth-form .btn:disabled{ opacity: .55; cursor: default; }
+.auth-links{ display: grid; justify-items: start; gap: 7px; margin-top: var(--s5); }
+.auth-links button{ font-size: var(--t-sm); color: var(--ledger); padding: 1px 0; }
+.auth-links button:hover{ text-decoration: underline; }
+.auth-msg{
+  font-size: var(--t-sm); line-height: 1.55; margin-bottom: var(--s3);
+  padding: 10px 13px; border-radius: var(--r-md);
+  background: rgba(155,58,46,.07); color: var(--alarm); border: 1px solid rgba(155,58,46,.22);
+}
+.auth-msg[data-tone="ok"]{ background: rgba(28,59,48,.07); color: var(--ledger); border-color: rgba(28,59,48,.22); }
+.auth-back{ font-size: var(--t-xs); color: var(--text-3); }
+.auth-back:hover{ color: var(--text); }
+@media (max-width: 820px){
+  .auth{ grid-template-columns: 1fr; }
+  .auth-side{ gap: var(--s5); }
+  .auth-quote{ font-size: 26px; }
+}
+
+/* ── Account panel inside the settings modal ── */
+.acct-head{ display: flex; align-items: center; gap: var(--s3); margin-bottom: var(--s4); }
+.acct-row{ display: flex; justify-content: space-between; gap: var(--s3); font-size: var(--t-sm); color: var(--text-2); }
+.acct-row b{ color: var(--text); font-weight: 600; }
+.acct-actions{ display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--s4); }
+.acct-actions .btn{ padding: 9px 16px; font-size: var(--t-xs); }
+.acct-actions a.btn{ text-decoration: none; }
+.acct-warn{
+  margin-top: var(--s3); font-size: var(--t-sm); line-height: 1.55;
+  padding: 10px 13px; border-radius: var(--r-md);
+  background: rgba(168,129,63,.1); color: #6E5222;
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════
+     LANDING
+     ══════════════════════════════════════════════════════════ -->
+<div class="screen" id="s-land" data-on>
+
+  <header class="masthead" id="masthead">
+    <div class="wordmark"><b>PRA Legal</b><i>Tel Aviv</i></div>
+    <a class="mast-link" data-desk href="#what">What it does</a>
+    <a class="mast-link" data-desk href="#cost">Cost</a>
+    <button class="mast-link" data-act="enter">Open workspace</button>
+  </header>
+
+  <section class="hero">
+    <div class="stage" id="stage"></div>
+    <div class="stage-veil"></div>
+    <div class="stage-grain"></div>
+
+    <div class="hero-inner">
+      <div class="hero-eyebrow"><span class="pip"></span><span>Built for Israeli practice — עברית ואנגלית</span></div>
+
+      <h1>The paralegal who<br>never leaves<br><em>your desk.</em></h1>
+
+      <div class="hero-say" id="hero-say"></div>
+
+      <div class="hero-cta">
+        <button class="btn btn-solid" data-act="enter">Open the workspace</button>
+        <a class="btn btn-ghost" href="#what">See what it handles</a>
+      </div>
+
+      <div class="scrub" id="scrub"></div>
+    </div>
+  </section>
+
+  <div class="sheet">
+
+    <section class="band" id="what">
+      <div class="band-head">
+        <h2>Six things Frank does before lunch</h2>
+        <p>Frank is the paralegal in this workspace. He drafts, reads, files and remembers — you keep the judgement and the signature.</p>
+      </div>
+      <div class="caps">
+        <div class="cap">
+          <div class="cap-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8"/></svg></div>
+          <h3>Draft the agreement</h3>
+          <p>Founders, shareholders, share purchase, investment, supply, distribution, lease, NDA. Israeli law by default, governing law on request.</p>
+        </div>
+        <div class="cap">
+          <div class="cap-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></div>
+          <h3>Read what came in</h3>
+          <p>Drop a contract and get the parties, the obligations, the dates that bite, and the clauses that should be there but aren't.</p>
+        </div>
+        <div class="cap">
+          <div class="cap-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+          <h3>Keep the matter moving</h3>
+          <p>Every document becomes a matter with tasks, deadlines and a client file. Export the dates straight to your calendar.</p>
+        </div>
+        <div class="cap">
+          <div class="cap-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/></svg></div>
+          <h3>Learn your clients</h3>
+          <p>Feed Frank the file and he builds the picture: who they are, what's been done, what's still owed, and where the exposure sits.</p>
+        </div>
+        <div class="cap">
+          <div class="cap-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-4 4"/></svg></div>
+          <h3>Write the business plan</h3>
+          <p>Full תוכנית עסקית in the Investment Authority format — thirteen sections, five-year P&amp;L, cash flow, NPV. Tkouma and manufacturing tracks.</p>
+        </div>
+        <div class="cap">
+          <div class="cap-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v11a2 2 0 002 2h10a2 2 0 002-2V8"/><path d="M10 12h4"/></svg></div>
+          <h3>Hand you the file</h3>
+          <p>Word and PDF out, edit in place before either. Nothing leaves the browser except the model call.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="band" id="cost">
+      <div class="band-head">
+        <h2>Cost</h2>
+        <p>Every tier is the whole product. What changes is whose model key pays for the drafting.</p>
+      </div>
+      <div class="tiers">
+        <div class="tier">
+          <div class="tier-name">Own key</div>
+          <div class="tier-cost">Free<small></small></div>
+          <div class="tier-note">You bring an Anthropic key and pay Anthropic directly</div>
+          <ul>
+            <li>Every feature, no limit</li>
+            <li>Keys stay in your browser</li>
+            <li>Roughly ₪0.25 per agreement</li>
+          </ul>
+          <button class="btn btn-outline" data-act="enter">Start now</button>
+        </div>
+        <div class="tier" data-feature>
+          <div class="tier-name">Practitioner</div>
+          <div class="tier-cost">₪199<small> / month</small></div>
+          <div class="tier-note">Model access included, no key to manage</div>
+          <ul>
+            <li>Everything in Own key</li>
+            <li>Several hundred agreements a month included</li>
+            <li>No Anthropic account needed</li>
+            <li>Support within one business day</li>
+          </ul>
+          <button class="btn btn-green" data-act="buy-practitioner">Choose Practitioner</button>
+        </div>
+        <div class="tier">
+          <div class="tier-name">Firm</div>
+          <div class="tier-cost">₪599<small> / month</small></div>
+          <div class="tier-note">For heavy use — long reads and business plans</div>
+          <ul>
+            <li>Everything in Practitioner</li>
+            <li>More than two and a half times the allowance</li>
+            <li>Priority support</li>
+            <li>Team seats are on the way</li>
+          </ul>
+          <button class="btn btn-outline" data-act="buy-firm">Choose Firm</button>
+        </div>
+      </div>
+    </section>
+
+    <footer class="colophon">
+      <strong>PRA Legal</strong> — Tel Aviv. Drafting assistance for licensed practitioners.<br>
+      Output is a first draft for a qualified lawyer to review. It is not legal advice, and using this workspace does not create an attorney–client relationship.<br>
+      © 2026 PRA Legal. All rights reserved.
+    </footer>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     SIGN IN
+     ══════════════════════════════════════════════════════════ -->
+<div class="screen" id="s-auth">
+  <div class="auth">
+    <aside class="auth-side">
+      <div class="wordmark"><b>PRA Legal</b><i>Tel Aviv</i></div>
+      <p class="auth-quote">Your matters stay on your machine. Only the drafting goes out.</p>
+      <p class="auth-fine">Client files, matters and conversations are kept in this browser. Our server holds your account, your plan and a count of what you used — nothing about your clients.</p>
+    </aside>
+
+    <main class="auth-main">
+      <form class="auth-form" id="auth-form" novalidate>
+        <h2 id="auth-title">Sign in</h2>
+        <p id="auth-sub">Welcome back.</p>
+
+        <div class="field" data-for="signup">
+          <label for="au-name">Full name</label>
+          <input class="inp" id="au-name" autocomplete="name">
+        </div>
+        <div class="field" data-for="signup">
+          <label for="au-firm">Firm <span style="color:var(--text-3);font-weight:400">— optional</span></label>
+          <input class="inp" id="au-firm" autocomplete="organization">
+        </div>
+        <div class="field" data-for="signin signup reset">
+          <label for="au-email">Email</label>
+          <input class="inp" id="au-email" type="email" autocomplete="email" inputmode="email">
+        </div>
+        <div class="field" data-for="signin signup newpass">
+          <label for="au-pass" id="au-pass-label">Password</label>
+          <input class="inp" id="au-pass" type="password" autocomplete="current-password">
+          <div class="field-hint" data-for="signup newpass">At least 8 characters.</div>
+        </div>
+
+        <div class="auth-msg" id="auth-msg" hidden></div>
+        <button class="btn btn-green" type="submit" id="auth-submit">Sign in</button>
+
+        <div class="auth-links">
+          <button type="button" data-mode="reset"  data-for="signin">Forgot your password?</button>
+          <button type="button" data-mode="signup" data-for="signin">New here? Create an account</button>
+          <button type="button" data-mode="signin" data-for="signup reset">I already have an account</button>
+        </div>
+      </form>
+      <button class="auth-back" data-act="to-landing">Back to the front page</button>
+    </main>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     WORKSPACE
+     ══════════════════════════════════════════════════════════ -->
+<div class="screen" id="s-app">
+
+  <nav class="rail">
+    <div class="rail-seal">§</div>
+    <button class="rail-btn" data-view="draft" data-tip="Draft — ⌘1" data-on>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
+    </button>
+    <button class="rail-btn" data-view="read" data-tip="Read a document — ⌘2">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+    </button>
+    <button class="rail-btn" data-view="matters" data-tip="Matters — ⌘3">
+      <span class="rail-count" id="count-matters">0</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+    </button>
+    <button class="rail-btn" data-view="clients" data-tip="Clients — ⌘4">
+      <span class="rail-count" id="count-clients">0</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/></svg>
+    </button>
+    <button class="rail-btn" data-view="plan" data-tip="Business plan — ⌘5">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-4 4"/></svg>
+    </button>
+
+    <div class="rail-gap"></div>
+
+    <button class="rail-btn" data-act="frank" data-tip="Ask Frank — ⌘J">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.4 8.4 0 013.8-.9h.5a8.48 8.48 0 018 8z"/></svg>
+    </button>
+    <button class="rail-btn" data-act="keys" data-tip="Keys and settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6h.09A1.65 1.65 0 0010 3.09V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9v.09a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    </button>
+    <button class="rail-btn" data-act="leave" data-tip="Leave workspace">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+    </button>
+  </nav>
+
+  <main class="canvas">
+    <div class="strip" id="strip"></div>
+
+    <div class="topbar">
+      <div class="crumb" id="crumb"><b>Draft</b></div>
+      <div class="topbar-fill"></div>
+      <button class="kbtn" data-act="palette">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <span>Search or run</span><kbd>⌘K</kbd>
+      </button>
+    </div>
+
+    <!-- ── DRAFT ──────────────────────────────────────────── -->
+    <section class="view" id="v-draft" data-on>
+      <div class="scroller"><div class="pad measure">
+        <div class="vhead">
+          <h2>What are we drafting?</h2>
+          <p>Pick the instrument, give Frank the commercial terms, and he returns a complete first draft you can edit before it leaves.</p>
+        </div>
+
+        <div class="picker" id="picker"></div>
+
+        <div id="draft-form" hidden>
+          <div class="divider"></div>
+          <div id="form-slot"></div>
+
+          <div class="legend">Language and law</div>
+          <div class="row2">
+            <div class="field">
+              <label for="f-lang">Draft in</label>
+              <select class="inp" id="f-lang">
+                <option value="en">English</option>
+                <option value="he">עברית</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="f-law">Governing law</label>
+              <select class="inp" id="f-law">
+                <option value="Israeli">Israel</option>
+                <option value="Delaware">Delaware</option>
+                <option value="English">England &amp; Wales</option>
+                <option value="New York">New York</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="f-notes">Anything else Frank should know</label>
+            <textarea class="inp" id="f-notes" rows="3" placeholder="Unusual terms, a clause you always include, who's the stronger party…"></textarea>
+          </div>
+
+          <button class="btn btn-green" data-act="draft-run" style="width:100%;padding:14px">Draft it</button>
+        </div>
+      </div></div>
+    </section>
+
+    <!-- ── DOCUMENT ───────────────────────────────────────── -->
+    <section class="view doc-wrap" id="v-doc">
+      <div class="doc-bar">
+        <button class="tool" data-act="doc-back">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>Back
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool" data-act="doc-edit" id="btn-edit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 013 3L12 15l-4 1 1-4z"/></svg>Edit
+        </button>
+        <button class="tool" data-act="doc-word">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>Word
+        </button>
+        <button class="tool" data-act="doc-pdf">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>PDF
+        </button>
+        <button class="tool" data-act="doc-copy">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy
+        </button>
+        <div class="tool-sep"></div>
+        <button class="tool" data-act="doc-file">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>Open as matter
+        </button>
+        <button class="tool" data-act="doc-review">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.6l-8.5 14A2 2 0 003.5 21h17a2 2 0 001.7-3.4l-8.5-14a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>Find the risks
+        </button>
+      </div>
+      <div class="scroller" id="doc-scroll">
+        <article class="sheet-doc" id="doc"></article>
+      </div>
+    </section>
+
+    <!-- ── READ ───────────────────────────────────────────── -->
+    <section class="view" id="v-read">
+      <div class="scroller"><div class="pad measure">
+        <div class="vhead">
+          <h2>Put a document in front of Frank</h2>
+          <p>PDF, Word or plain text. He returns the parties, the obligations, the dates, the exposure, and what a careful lawyer would have added.</p>
+        </div>
+        <button class="drop" id="read-drop">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+          <b>Choose a file or drop it here</b>
+          <span>PDF, DOC, DOCX, TXT — up to about 20 pages works best</span>
+        </button>
+        <input type="file" id="read-input" accept=".pdf,.doc,.docx,.txt,.md" hidden>
+        <div id="read-out" style="margin-top:var(--s6)"></div>
+      </div></div>
+    </section>
+
+    <!-- ── MATTERS ────────────────────────────────────────── -->
+    <section class="view" id="v-matters">
+      <div class="scroller"><div class="pad measure-wide">
+        <div class="vhead">
+          <h2>Matters</h2>
+          <p>Every document Frank reads can become a matter — with its tasks, its dates and its client. Nothing here leaves your browser.</p>
+        </div>
+        <div style="display:flex;gap:9px;margin-bottom:var(--s5);flex-wrap:wrap">
+          <button class="btn btn-green" data-act="matter-new" style="padding:10px 20px">Open a matter from a document</button>
+          <button class="btn btn-outline" data-act="matter-ics" style="padding:10px 20px">Export all dates</button>
+        </div>
+        <input type="file" id="matter-input" accept=".pdf,.doc,.docx,.txt,.md" hidden>
+        <div id="matters-out"></div>
+      </div></div>
+    </section>
+
+    <!-- ── CLIENTS ────────────────────────────────────────── -->
+    <section class="view" id="v-clients">
+      <div class="scroller"><div class="pad measure-wide">
+        <div class="vhead">
+          <h2>Clients</h2>
+          <p>Give Frank the file — old contracts, correspondence, notes — and he builds the picture: who they are, what's been done, what's still owed.</p>
+        </div>
+        <div style="margin-bottom:var(--s5)">
+          <button class="btn btn-green" data-act="client-new" style="padding:10px 20px">Teach Frank about a client</button>
+        </div>
+        <input type="file" id="client-input" accept=".pdf,.doc,.docx,.txt,.md" multiple hidden>
+        <div id="clients-out"></div>
+      </div></div>
+    </section>
+
+    <!-- ── BUSINESS PLAN ──────────────────────────────────── -->
+    <section class="view" id="v-plan">
+      <div class="scroller"><div class="pad measure">
+        <div class="vhead">
+          <h2>Business plan</h2>
+          <p>The thirteen-section format the Investment Authority expects, with a five-year P&amp;L, cash flow and NPV at 6.5%. Frank fills the numbers from the industry.</p>
+        </div>
+
+        <div class="legend">Track</div>
+        <div class="field">
+          <select class="inp" id="bp-track">
+            <option value="tkouma">מסלול תקומה א — Tkouma, 50% grant, Chevev Tkouma</option>
+            <option value="manufacture">מסלול ייצור — manufacturing expansion</option>
+            <option value="tourism">מסלול תיירות — tourism</option>
+            <option value="innovation">מסלול חדשנות — innovation and startups</option>
+            <option value="general">כללי — general</option>
+          </select>
+        </div>
+
+        <div class="legend">The business</div>
+        <div class="row2">
+          <div class="field"><label for="bp-co">Company name</label><input class="inp" id="bp-co" placeholder="ע.ב. חשמל הנגב בע״מ"></div>
+          <div class="field"><label for="bp-reg">Registration number</label><input class="inp" id="bp-reg" inputmode="numeric" placeholder="515776607"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="bp-who">Entrepreneur</label><input class="inp" id="bp-who" placeholder="Full name"></div>
+          <div class="field"><label for="bp-sector">Sector</label><input class="inp" id="bp-sector" placeholder="Electrical infrastructure supply"></div>
+        </div>
+
+        <div class="legend">Site</div>
+        <div class="field"><label for="bp-zone">Industrial zone</label><input class="inp" id="bp-zone" placeholder="אזו״ת שדרות"></div>
+        <div class="row2">
+          <div class="field"><label for="bp-plot">Plot</label><input class="inp" id="bp-plot" inputmode="numeric" placeholder="264"></div>
+          <div class="field"><label for="bp-area">Area in m²</label><input class="inp" id="bp-area" inputmode="numeric" placeholder="2000"></div>
+        </div>
+
+        <div class="legend">Money</div>
+        <div class="row2">
+          <div class="field"><label for="bp-inv">Total investment ₪</label><input class="inp" id="bp-inv" inputmode="numeric" placeholder="1,200,000"></div>
+          <div class="field"><label for="bp-grant">Grant sought ₪</label><input class="inp" id="bp-grant" inputmode="numeric" placeholder="600,000"></div>
+        </div>
+        <div class="row2">
+          <div class="field"><label for="bp-staff">Staff today</label><input class="inp" id="bp-staff" inputmode="numeric" placeholder="9"></div>
+          <div class="field"><label for="bp-rev">Last year's revenue ₪</label><input class="inp" id="bp-rev" inputmode="numeric" placeholder="15,800,000"></div>
+        </div>
+
+        <div class="field">
+          <label for="bp-products">What the business sells</label>
+          <textarea class="inp" id="bp-products" rows="3" placeholder="Cables, outdoor and indoor lighting, high-voltage equipment, meters and control panels…"></textarea>
+        </div>
+        <div class="field">
+          <label for="bp-notes">Anything else</label>
+          <textarea class="inp" id="bp-notes" rows="2" placeholder="War damage, relocation, a specific directive…"></textarea>
+        </div>
+
+        <div class="legend">Language</div>
+        <div class="chips" id="bp-lang" style="margin-bottom:var(--s5)">
+          <button class="chip" data-val="he" data-on>עברית</button>
+          <button class="chip" data-val="en">English</button>
+        </div>
+
+        <button class="btn btn-green" data-act="plan-run" style="width:100%;padding:14px">Write the plan</button>
+      </div></div>
+    </section>
+  </main>
+</div>
+
+<!-- ── Frank drawer ───────────────────────────────────────── -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Frank">
+  <div class="drawer-head">
+    <div class="frank-seal">F</div>
+    <div style="flex:1;min-width:0">
+      <b>Frank</b><span id="frank-state">Paralegal · ready</span>
+    </div>
+    <button class="icon-btn" data-act="frank-clear" title="Clear this conversation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+    </button>
+    <button class="icon-btn" data-act="frank-close" title="Close">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+
+  <div class="thread" id="thread"></div>
+
+  <div class="composer">
+    <div class="composer-box">
+      <textarea id="ask" rows="1" placeholder="Ask Frank…"></textarea>
+      <button class="send" id="send" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>
+      </button>
+    </div>
+    <div class="composer-note">First drafts for a qualified lawyer to review</div>
+  </div>
+</aside>
+
+<!-- ── Command palette ────────────────────────────────────── -->
+<div class="palette-scrim" id="palette-scrim">
+  <div class="palette" role="dialog" aria-label="Command palette">
+    <div class="palette-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      <input id="palette-input" placeholder="Draft an NDA, read a contract, open settings…" autocomplete="off" spellcheck="false">
+    </div>
+    <div class="palette-list" id="palette-list"></div>
+    <div class="palette-foot">
+      <span><kbd>↑</kbd><kbd>↓</kbd> move</span>
+      <span><kbd>↵</kbd> run</span>
+      <span><kbd>esc</kbd> close</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Keys and settings ──────────────────────────────────── -->
+<div class="modal-scrim" id="keys-scrim">
+  <div class="modal" role="dialog" aria-label="Keys and settings">
+    <div class="modal-head">
+      <div style="flex:1">
+        <h3 id="keys-title">Keys and settings</h3>
+        <p id="keys-sub">Stored in this browser only. Nothing is sent anywhere except the model call.</p>
+      </div>
+      <button class="icon-btn" data-act="keys-close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div id="acct-block" hidden>
+        <div class="acct-head">
+          <span class="record-mark" id="acct-initials">?</span>
+          <div class="key-info"><b id="acct-name"></b><span id="acct-email"></span></div>
+          <span class="key-state" id="acct-plan" data-state="opt"></span>
+        </div>
+        <div id="acct-usage" hidden>
+          <div class="acct-row"><span>Drafting used this month</span><b id="acct-used"></b></div>
+          <div class="meter" style="margin:8px 0 5px"><i id="acct-meter" style="width:0"></i></div>
+          <div class="field-hint" id="acct-reset"></div>
+        </div>
+        <div class="acct-warn" id="acct-warn" hidden></div>
+        <div class="acct-actions" id="acct-actions"></div>
+        <div class="divider"></div>
+      </div>
+
+      <div id="own-key-block">
+      <div class="key-row">
+        <div class="key-mark" style="background:var(--ledger)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="M21 2l-2 2m-7.6 7.6a5 5 0 11-7.1 7.1 5 5 0 017.1-7.1zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3"/></svg>
+        </div>
+        <div class="key-info">
+          <b>Anthropic</b><span>Everything Frank does runs on this</span>
+        </div>
+        <span class="key-state" id="state-anthropic" data-state="off">Not set</span>
+      </div>
+      <div class="field">
+        <input class="inp" id="key-anthropic" type="text" spellcheck="false" autocomplete="off" placeholder="sk-ant-api03-…" style="font-size:13px">
+        <div class="field-hint">
+          Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--ledger)">console.anthropic.com/settings/keys</a> — it's shown once, so copy it straight away.
+        </div>
+      </div>
+      <button class="btn btn-outline" data-act="keys-test" id="btn-test" style="width:100%;padding:10px;margin-bottom:var(--s5)">Check the key works</button>
+      </div>
+
+      <div class="key-row">
+        <div class="key-mark" style="background:var(--brass)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="17" height="17"><path d="M12 2a3 3 0 00-3 3v7a3 3 0 006 0V5a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2M12 19v4"/></svg>
+        </div>
+        <div class="key-info">
+          <b>ElevenLabs</b><span>Gives Frank a voice — optional</span>
+        </div>
+        <span class="key-state" id="state-eleven" data-state="opt">Optional</span>
+      </div>
+      <div class="row2">
+        <div class="field"><input class="inp" id="key-eleven" type="text" spellcheck="false" autocomplete="off" placeholder="API key" style="font-size:13px"></div>
+        <div class="field"><input class="inp" id="key-voice" type="text" spellcheck="false" autocomplete="off" placeholder="Voice ID" style="font-size:13px"></div>
+      </div>
+
+      <div class="divider"></div>
+      <button class="btn btn-outline" data-act="wipe" style="width:100%;padding:10px;border-color:rgba(155,58,46,.35);color:var(--alarm)">Erase everything stored here</button>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-outline" data-act="keys-close">Close</button>
+      <button class="btn btn-green" data-act="keys-save" id="btn-save-keys">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-dock" id="toasts"></div>
+
+<!-- Accounts. If config.js is empty or missing, the workspace runs in
+     local mode: no sign-in, each user brings their own Anthropic key. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   PRA LEGAL — workspace
+   Sections: 1 config · 2 store · 3 dom · 4 api · 5 stage
+             6 palette · 7 router · 8 draft · 9 document
+             10 read · 11 matters · 12 clients · 13 plan
+             14 frank · 15 keys · 16 boot
+   ═══════════════════════════════════════════════════════════ */
+'use strict';
+
+/* ── 1. CONFIG ──────────────────────────────────────────── */
+
+/* Drop your image URLs here — the hero cross-dissolves between them.
+   Leave empty and the stage falls back to drawn gradients.          */
+const STAGE_IMAGES = [];
+
+const MODEL      = 'claude-sonnet-4-20250514';
+const MODEL_FAST = 'claude-haiku-4-5';
+const API_URL    = 'https://api.anthropic.com/v1/messages';
+
+const HERO_LINES = [
+  'Drop a contract in and get back the parties, the obligations and every date that bites — before your coffee lands.',
+  'Founders, shareholders, share purchase, lease, NDA. Complete first drafts in Hebrew or English, under the law you choose.',
+  'Every document becomes a matter: tasks, deadlines, client file. Frank keeps the thread so you keep the judgement.'
+];
+
+const INSTRUMENTS = [
+  { id:'founders',     name:'Founders',        blurb:'Equity split, vesting, IP assignment',   icon:'users' },
+  { id:'sha',          name:'Shareholders',    blurb:'Governance, transfer, exit rights',      icon:'scale' },
+  { id:'spa',          name:'Share purchase',  blurb:'M&A, warranties, completion',            icon:'building' },
+  { id:'investment',   name:'Investment',      blurb:'Term sheet, preference, anti-dilution',  icon:'coins' },
+  { id:'supply',       name:'Supply',          blurb:'Goods, delivery, payment, liability',    icon:'truck' },
+  { id:'distribution', name:'Distribution',    blurb:'Territory, exclusivity, targets',        icon:'box' },
+  { id:'lease',        name:'Lease',           blurb:'Israeli unprotected tenancy',            icon:'home' },
+  { id:'nda',          name:'NDA',             blurb:'One-way or mutual confidentiality',      icon:'lock' }
+];
+
+const ICONS = {
+  users:'<path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/>',
+  scale:'<path d="M12 3v18M7 7l-4 7h8zM17 7l4 7h-8zM5 21h14"/>',
+  building:'<rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 7h1M14 7h1M9 12h1M14 12h1M10 22v-4h4v4"/>',
+  coins:'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9.5 9.5h4a1.8 1.8 0 010 3.6h-3a1.8 1.8 0 000 3.6h4"/>',
+  truck:'<path d="M15 17H3V5h12zM15 9h4l3 3v5h-7z"/><circle cx="6.5" cy="17.5" r="2"/><circle cx="17.5" cy="17.5" r="2"/>',
+  box:'<path d="M21 8l-9-5-9 5v8l9 5 9-5z"/><path d="M3.3 7.5L12 12.5l8.7-5M12 21.5v-9"/>',
+  home:'<path d="M3 10.5L12 3l9 7.5V21a1 1 0 01-1 1H4a1 1 0 01-1-1z"/><path d="M9 22v-7h6v7"/>',
+  lock:'<rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/>',
+  file:'<path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+  folder:'<path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>',
+  chart:'<path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-4 4"/>',
+  chat:'<path d="M21 11.5a8.4 8.4 0 01-9 8.5 8.4 8.4 0 01-3.8-.9L3 21l1.9-5.7A8.4 8.4 0 014 11.5a8.5 8.5 0 018.5-8.5h.5a8.48 8.48 0 018 8z"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6h.09A1.65 1.65 0 0010 3.09V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9v.09a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/>',
+  warn:'<path d="M10.3 3.6l-8.5 14A2 2 0 003.5 21h17a2 2 0 001.7-3.4l-8.5-14a2 2 0 00-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
+  down:'<path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+  check:'<path d="M20 6L9 17l-5-5"/>',
+  cal:'<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  exit:'<path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>'
+};
+
+function svg(name, size){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" ' +
+         'stroke-linecap="round" stroke-linejoin="round"' + (size ? ' width="'+size+'" height="'+size+'"' : '') +
+         '>' + (ICONS[name] || '') + '</svg>';
+}
+
+/* ── 2. STORE — one object, one save path ───────────────── */
+
+const KEYS = {
+  anthropic: 'pra.key.anthropic',
+  eleven:    'pra.key.eleven',
+  voice:     'pra.key.voice',
+  matters:   'pra.matters',
+  clients:   'pra.clients',
+  thread:    'pra.thread'
+};
+
+const Store = {
+  read(key, fallback){
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw === null) return fallback;
+      return typeof fallback === 'string' ? raw : JSON.parse(raw);
+    } catch { return fallback; }
+  },
+  write(key, value){
+    try {
+      localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+      return true;
+    } catch { return false; }
+  },
+  drop(key){ try { localStorage.removeItem(key); } catch {} }
+};
+
+/* Single source of truth. Nothing else holds app state. */
+const App = {
+  view: 'draft',
+  instrument: null,
+  doc: { title: '', html: '', dir: 'ltr', kind: '' },
+  matters: [],
+  clients: [],
+  thread: [],
+  busy: false,
+  bpLang: 'he',
+
+  key(){ return Store.read(KEYS.anthropic, '') || ''; },
+  /* Can this user make a model call right now? Either their plan includes
+     hosted drafting, or they have put in their own Anthropic key. */
+  hasKey(){
+    if (typeof Account !== 'undefined' && Account.hosted()) return true;
+    const k = this.key();
+    return !!(k && k.length > 20);
+  },
+
+  load(){
+    this.matters = Store.read(KEYS.matters, []) || [];
+    this.clients = Store.read(KEYS.clients, []) || [];
+    this.thread  = Store.read(KEYS.thread, []) || [];
+  },
+  saveMatters(){ Store.write(KEYS.matters, this.matters); Counts.sync(); },
+  saveClients(){ Store.write(KEYS.clients, this.clients); Counts.sync(); },
+  saveThread(){ Store.write(KEYS.thread, this.thread.slice(-40)); }
+};
+
+/* ── 2b. ACCOUNT — sign-in, plan, usage, billing ────────── */
+/* Runs only when config.js holds a Supabase project. Without it the
+   workspace is in local mode: no sign-in, own Anthropic key only.   */
+
+const CFG = window.PRA_CONFIG || {};
+const LIVE_STATUSES = ['active', 'trialing', 'comped'];
+
+const Account = {
+  enabled: !!(CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase && window.supabase.createClient),
+  sb: null,
+  session: null,
+  profile: null,
+  mode: 'signin',
+
+  async init(){
+    if (!this.enabled) return;
+    const recovering = /type=recovery/.test(location.hash);
+
+    this.sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+    });
+
+    this.sb.auth.onAuthStateChange((event, session) => {
+      this.session = session;
+      if (event === 'PASSWORD_RECOVERY') Router.showAuth('newpass');
+      if (event === 'SIGNED_OUT') this.profile = null;
+    });
+
+    const { data } = await this.sb.auth.getSession();
+    this.session = data ? data.session : null;
+    if (this.session) await this.refresh();
+    if (recovering && this.session) Router.showAuth('newpass');
+  },
+
+  signedIn(){ return !this.enabled || !!this.session; },
+
+  hosted(){
+    const p = this.profile;
+    return !!(this.enabled && p && p.hosted && !p.suspended && LIVE_STATUSES.includes(p.subscription_status));
+  },
+
+  async token(){
+    if (!this.sb) return null;
+    const { data } = await this.sb.auth.getSession();
+    this.session = data ? data.session : null;
+    return this.session ? this.session.access_token : null;
+  },
+
+  async refresh(){
+    if (!this.enabled || !this.session) return;
+    const { data, error } = await this.sb.rpc('my_account');
+    if (!error && data) this.profile = data;
+    this.sb.rpc('touch_last_seen').then(() => {}, () => {});
+  },
+
+  /* Local count after a hosted call, so the meter moves without a reload. */
+  bump(usage){
+    if (!this.profile || !usage) return;
+    this.profile.used = Number(this.profile.used || 0) +
+      (Number(usage.input_tokens) || 0) + (Number(usage.output_tokens) || 0);
+  },
+
+  log(kind, detail){
+    if (!this.enabled || !this.session) return;
+    this.sb.from('events')
+      .insert({ user_id: this.session.user.id, kind, detail: detail || {} })
+      .then(() => {}, () => {});
+  },
+
+  /* ── sign-in screen ── */
+  setMode(mode){
+    this.mode = mode;
+    const copy = {
+      signin:  ['Sign in', 'Welcome back.', 'Sign in'],
+      signup:  ['Create your account', 'Start free with your own Anthropic key, or choose a plan that includes drafting.', 'Create account'],
+      reset:   ['Reset your password', 'We will email you a link to choose a new one.', 'Send the link'],
+      newpass: ['Choose a new password', 'You followed a reset link. Set the password you will use from now on.', 'Save password']
+    }[mode] || [];
+    $('#auth-title').textContent  = copy[0];
+    $('#auth-sub').textContent    = copy[1];
+    $('#auth-submit').textContent = copy[2];
+    $('#au-pass-label').textContent = mode === 'newpass' ? 'New password' : 'Password';
+    $('#au-pass').setAttribute('autocomplete', mode === 'signin' ? 'current-password' : 'new-password');
+    $$('#s-auth [data-for]').forEach(el => { el.hidden = !el.dataset.for.split(' ').includes(mode); });
+    this.say('');
+    setTimeout(() => {
+      const first = $$('#auth-form .field').find(f => !f.hidden);
+      const input = first && first.querySelector('.inp');
+      if (input && input.focus) input.focus();
+    }, 40);
+  },
+
+  say(text, tone){
+    const el = $('#auth-msg');
+    if (!el) return;
+    el.hidden = !text;
+    el.textContent = text || '';
+    if (tone) el.dataset.tone = tone; else el.removeAttribute('data-tone');
+  },
+
+  async submit(){
+    if (!this.enabled) return;
+    const btn   = $('#auth-submit');
+    const email = val('au-email').toLowerCase();
+    const passEl = document.getElementById('au-pass');
+    const pass  = passEl ? String(passEl.value || '') : '';
+    const mode  = this.mode;
+
+    if (mode !== 'newpass' && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return this.say('Enter the email you use for PRA Legal.');
+    if ((mode === 'signup' || mode === 'newpass') && pass.length < 8) return this.say('Use at least 8 characters for the password.');
+    if (mode === 'signin' && !pass) return this.say('Enter your password.');
+    if (mode === 'signup' && !val('au-name')) return this.say('Enter your full name.');
+
+    const label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'One moment…';
+    this.say('');
+    const here = location.origin + location.pathname;
+
+    try {
+      if (mode === 'signin'){
+        const { error } = await this.sb.auth.signInWithPassword({ email, password: pass });
+        if (error){
+          if (/confirm/i.test(error.message)) return this.say('Confirm your email first — the link is in your inbox.');
+          return this.say('That email and password do not match an account.');
+        }
+        await this.afterSignIn();
+      }
+      else if (mode === 'signup'){
+        const { data, error } = await this.sb.auth.signUp({
+          email, password: pass,
+          options: { data: { full_name: val('au-name'), firm: val('au-firm') }, emailRedirectTo: here }
+        });
+        if (error) return this.say(/registered|exists/i.test(error.message) ? 'That email already has an account. Sign in instead.' : error.message);
+        if (!data.session) return this.say('Check your inbox and confirm your email, then sign in here.', 'ok');
+        await this.afterSignIn();
+      }
+      else if (mode === 'reset'){
+        const { error } = await this.sb.auth.resetPasswordForEmail(email, { redirectTo: here });
+        if (error) return this.say(error.message);
+        this.say('If that email has an account, a reset link is on its way.', 'ok');
+      }
+      else if (mode === 'newpass'){
+        const { error } = await this.sb.auth.updateUser({ password: pass });
+        if (error) return this.say(error.message);
+        history.replaceState(null, '', location.pathname);
+        toast('Password changed');
+        await this.afterSignIn();
+      }
+    } catch (err){
+      this.say('Could not reach the server: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = label;
+    }
+  },
+
+  async afterSignIn(){
+    const { data } = await this.sb.auth.getSession();
+    this.session = data ? data.session : null;
+    await this.refresh();
+    this.log('sign_in');
+    const intent = sessionStorage.getItem('pra.intent');
+    if (intent){
+      sessionStorage.removeItem('pra.intent');
+      return this.billing('checkout', intent);
+    }
+    Router.enterApp();
+  },
+
+  async leave(){
+    if (this.enabled && this.session){
+      await this.sb.auth.signOut().catch(() => {});
+      this.session = null;
+      this.profile = null;
+      toast('Signed out');
+    }
+    Router.leaveApp();
+  },
+
+  /* ── billing ── */
+  buy(plan){
+    if (!this.enabled){ toast('Billing is not set up in this copy of PRA Legal', 'bad'); return; }
+    if (!this.session){
+      sessionStorage.setItem('pra.intent', plan);
+      Router.showAuth('signup');
+      return;
+    }
+    this.billing('checkout', plan);
+  },
+
+  async billing(action, plan){
+    try {
+      const token = await this.token();
+      if (!token){ Router.showAuth('signin'); return; }
+      toast(action === 'portal' ? 'Opening billing' : 'Opening checkout');
+      const res = await fetch(CFG.supabaseUrl + '/functions/v1/billing', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token, apikey: CFG.supabaseAnonKey },
+        body: JSON.stringify({ action, plan })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.url) throw new Error(data.error || 'Billing is not available right now.');
+      location.href = data.url;
+    } catch (err){
+      toast(err.message, 'bad');
+    }
+  },
+
+  /* ── account panel in the settings modal ── */
+  paint(){
+    const block = $('#acct-block');
+    if (!block) return;
+    const on = this.enabled && !!this.session;
+    block.hidden = !on;
+    $('#keys-title').textContent = on ? 'Account' : 'Keys and settings';
+    $('#keys-sub').textContent = on
+      ? 'Your plan and usage. Client work stays in this browser.'
+      : 'Stored in this browser only. Nothing is sent anywhere except the model call.';
+    $('#own-key-block').hidden = on && this.hosted();
+    if (!on) return;
+
+    const p = this.profile || {};
+    $('#acct-initials').textContent = initials(p.full_name || p.email);
+    $('#acct-name').textContent  = p.full_name || 'Your account';
+    $('#acct-email').textContent = [p.email, p.firm].filter(Boolean).join(' — ');
+
+    const plan = $('#acct-plan');
+    plan.textContent = p.plan_name || 'Own key';
+    plan.dataset.state = this.hosted() ? 'on' : 'opt';
+
+    const usage = $('#acct-usage');
+    usage.hidden = !p.hosted;
+    if (p.hosted){
+      const used = Number(p.used || 0), cap = Number(p.allowance || 0);
+      $('#acct-used').textContent = fmtTokens(used) + ' of ' + fmtTokens(cap);
+      $('#acct-meter').style.width = (cap ? Math.min(100, Math.round(100 * used / cap)) : 0) + '%';
+      const next = new Date(); next.setUTCMonth(next.getUTCMonth() + 1, 1);
+      $('#acct-reset').textContent = 'Resets on ' + next.toLocaleDateString([], { day:'numeric', month:'long' }) + '.';
+    }
+
+    const warn = $('#acct-warn');
+    let note = '';
+    if (p.suspended) note = 'This account is suspended. Contact PRA Legal support.';
+    else if (p.hosted && p.subscription_status === 'past_due') note = 'Your last payment did not go through. Update your card in billing to keep drafting.';
+    else if (p.hosted && p.subscription_status === 'canceled') note = 'Your subscription has ended.';
+    warn.hidden = !note;
+    warn.textContent = note;
+
+    const acts = [];
+    if (!this.hosted()){
+      acts.push('<button class="btn btn-green" data-act="buy-practitioner">Practitioner — ₪199 a month</button>');
+      acts.push('<button class="btn btn-outline" data-act="buy-firm">Firm — ₪599 a month</button>');
+    }
+    if (p.has_billing) acts.push('<button class="btn btn-outline" data-act="billing-portal">Manage billing</button>');
+    if (p.is_admin)    acts.push('<a class="btn btn-outline" href="admin.html">Open the back office</a>');
+    acts.push('<button class="btn btn-outline" data-act="leave">Sign out</button>');
+    $('#acct-actions').innerHTML = acts.join('');
+  },
+
+  wire(){
+    const form = $('#auth-form');
+    if (!form) return;
+    form.addEventListener('submit', e => { e.preventDefault(); this.submit(); });
+    $$('#s-auth [data-mode]').forEach(b => b.addEventListener('click', () => this.setMode(b.dataset.mode)));
+    if (this.enabled){
+      const leave = $('[data-act="leave"].rail-btn');
+      if (leave) leave.dataset.tip = 'Sign out';
+    }
+  }
+};
+
+function fmtTokens(n){
+  n = Number(n) || 0;
+  if (n >= 1e6) return (n / 1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/, '') + 'M';
+  if (n >= 1e3) return Math.round(n / 1e3) + 'k';
+  return String(n);
+}
+
+
+/* ── 3. DOM HELPERS ─────────────────────────────────────── */
+
+const $  = (sel, root) => (root || document).querySelector(sel);
+const val = id => { const el = document.getElementById(id); return el && el.value != null ? String(el.value).trim() : ''; };
+const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+
+function esc(str){
+  return String(str == null ? '' : str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* Minimal markdown for Frank's replies and generated documents. */
+function render(md){
+  let s = esc(md);
+  s = s.replace(/^### (.+)$/gm, '<h3>$1</h3>')
+       .replace(/^## (.+)$/gm,  '<h2>$1</h2>')
+       .replace(/^# (.+)$/gm,   '<h1>$1</h1>')
+       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+       .replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  const lines = s.split('\n');
+  let out = '', list = null;
+  for (const raw of lines){
+    const line = raw.trim();
+    const ul = /^[-*•]\s+(.*)$/.exec(line);
+    const ol = /^\d+[.)]\s+(.*)$/.exec(line);
+    if (ul){
+      if (list !== 'ul'){ if (list) out += '</'+list+'>'; out += '<ul>'; list = 'ul'; }
+      out += '<li>' + ul[1] + '</li>';
+    } else if (ol){
+      if (list !== 'ol'){ if (list) out += '</'+list+'>'; out += '<ol>'; list = 'ol'; }
+      out += '<li>' + ol[1] + '</li>';
+    } else {
+      if (list){ out += '</'+list+'>'; list = null; }
+      if (!line) continue;
+      out += /^<h[123]>/.test(line) ? line : '<p>' + line + '</p>';
+    }
+  }
+  if (list) out += '</'+list+'>';
+  return out;
+}
+
+function stripTags(html){
+  const d = document.createElement('div');
+  d.innerHTML = html;
+  return (d.textContent || '').replace(/\s+/g, ' ').trim();
+}
+
+function toast(message, tone){
+  const dock = $('#toasts');
+  if (!dock) return;
+  const el = document.createElement('div');
+  el.className = 'toast';
+  if (tone) el.dataset.tone = tone;
+  el.innerHTML = svg(tone === 'bad' ? 'warn' : 'check', 15) + '<span>' + esc(message) + '</span>';
+  dock.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity .3s, transform .3s';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(9px)';
+    setTimeout(() => el.remove(), 320);
+  }, tone === 'bad' ? 5200 : 2800);
+}
+
+function working(on){
+  App.busy = !!on;
+  const strip = $('#strip');
+  if (strip) strip.toggleAttribute('data-on', !!on);
+}
+
+const Counts = {
+  sync(){
+    const m = $('#count-matters'), c = $('#count-clients');
+    if (m){ m.textContent = App.matters.length; m.toggleAttribute('data-show', App.matters.length > 0); }
+    if (c){ c.textContent = App.clients.length; c.toggleAttribute('data-show', App.clients.length > 0); }
+  }
+};
+
+function initials(name){
+  return String(name || '?').trim().split(/\s+/).slice(0,2)
+    .map(w => w[0] || '').join('').toUpperCase() || '?';
+}
+
+function daysUntil(dateStr){
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  if (isNaN(d)) return null;
+  return Math.ceil((d - new Date()) / 86400000);
+}
+
+function whenLabel(dateStr){
+  const n = daysUntil(dateStr);
+  if (n === null) return '';
+  if (n < 0)  return Math.abs(n) + 'd overdue';
+  if (n === 0) return 'today';
+  if (n === 1) return 'tomorrow';
+  return 'in ' + n + 'd';
+}
+
+/* ── 4. API — the only place a model call is made ───────── */
+
+const Api = {
+  async send(opts){
+    const payload = {
+      model:      opts.model || MODEL,
+      max_tokens: opts.max || 2000,
+      system:     opts.system || undefined,
+      messages:   opts.messages
+    };
+    const viaProxy = Account.hosted();
+    let res;
+
+    if (viaProxy){
+      const token = await Account.token();
+      if (!token){
+        Router.showAuth('signin');
+        throw new Error('Sign in again to keep drafting.');
+      }
+      res = await fetch(CFG.supabaseUrl + '/functions/v1/claude', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token, apikey: CFG.supabaseAnonKey },
+        body: JSON.stringify(Object.assign({}, payload, { feature: opts.feature || null }))
+      });
+    } else {
+      const key = App.key();
+      if (!key){
+        Keys.open();
+        throw new Error(Account.enabled
+          ? 'Choose a plan that includes drafting, or add your own Anthropic key.'
+          : 'Add your Anthropic key in settings first.');
+      }
+      res = await fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'anthropic-dangerous-direct-browser-access': 'true'
+        },
+        body: JSON.stringify(payload)
+      });
+    }
+
+    let data;
+    try { data = await res.json(); }
+    catch { throw new Error('The model returned something unreadable.'); }
+
+    if (data.error){
+      const t = data.error.type || '';
+      const m = data.error.message || 'Unknown error';
+
+      if (viaProxy && t === 'authentication_error'){
+        Router.showAuth('signin');
+        throw new Error(m);
+      }
+      if (t === 'plan_error' || t === 'quota_error' || t === 'permission_error'){
+        Account.refresh();
+        const e = new Error(m);
+        e.authFailed = true;
+        throw e;
+      }
+      if (t === 'authentication_error' || /api[- ]key|invalid x-api|unauthor/i.test(m)){
+        const e = new Error('That API key was rejected. Check it in settings.');
+        e.authFailed = true;
+        throw e;
+      }
+      if (t === 'rate_limit_error') throw new Error('Rate limit — give it thirty seconds.');
+      if (t === 'overloaded_error') throw new Error('Anthropic is busy right now. Try again in a moment.');
+      throw new Error(m);
+    }
+
+    if (viaProxy) Account.bump(data.usage);
+
+    const text = (data.content || [])
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
+
+    if (!text) throw new Error('The model returned an empty response.');
+    return text;
+  },
+
+  /* Ask for JSON and get an object back, or null. */
+  async json(opts){
+    const raw = await this.send(opts);
+    const fence = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+    const body  = fence ? fence[1] : raw;
+    const match = body.match(/[[{][\s\S]*[\]}]/);
+    if (!match) return null;
+    try { return JSON.parse(match[0]); } catch { return null; }
+  },
+
+  /* Read a file into a form the model accepts. */
+  async part(file){
+    const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+    if (isPdf){
+      const b64 = await new Promise((ok, no) => {
+        const r = new FileReader();
+        r.onload = () => ok(String(r.result).split(',')[1]);
+        r.onerror = () => no(new Error('Could not read ' + file.name));
+        r.readAsDataURL(file);
+      });
+      return { type:'document', source:{ type:'base64', media_type:'application/pdf', data:b64 } };
+    }
+
+    if (/\.(txt|md)$/i.test(file.name)){
+      const text = await file.text();
+      return { type:'text', text:'=== ' + file.name + ' ===\n' + text.slice(0, 14000) };
+    }
+
+    /* doc/docx — salvage the readable runs */
+    const buf = new Uint8Array(await file.arrayBuffer());
+    let raw = '';
+    const cap = Math.min(buf.length, 400000);
+    for (let i = 0; i < cap; i++){
+      const c = buf[i];
+      if (c >= 32 && c < 127) raw += String.fromCharCode(c);
+      else if (c === 10 || c === 13 || c === 9) raw += ' ';
+    }
+    const words = raw.match(/[A-Za-z\u0590-\u05FF0-9,.:;()'"\u2019\-]{2,}/g) || [];
+    const text = words.join(' ').slice(0, 12000);
+    return {
+      type:'text',
+      text:'=== ' + file.name + ' ===\n' +
+           (text.length > 200 ? text : '[Word file — text could not be extracted cleanly. Convert to PDF for a proper read.]')
+    };
+  }
+};
+
+/* ── 5. STAGE — the cross-dissolving hero ───────────────── */
+
+const Stage = {
+  idx: 0,
+  timer: null,
+  count: 0,
+
+  /* Fallback panels when no images are supplied: drawn, not photographic. */
+  drawn: [
+    'radial-gradient(120% 90% at 18% 12%, #2E5A4A 0%, #14120F 62%), linear-gradient(200deg, #1C3B30 0%, #14120F 70%)',
+    'radial-gradient(100% 80% at 82% 22%, #4A3A1C 0%, #14120F 58%), linear-gradient(160deg, #211E1A 0%, #14120F 74%)',
+    'radial-gradient(130% 100% at 50% 100%, #26332E 0%, #14120F 60%), linear-gradient(20deg, #1C3B30 0%, #14120F 66%)'
+  ],
+
+  build(){
+    const host = $('#stage');
+    const scrub = $('#scrub');
+    const say = $('#hero-say');
+    if (!host) return;
+
+    const sources = STAGE_IMAGES.length ? STAGE_IMAGES : this.drawn;
+    this.count = Math.max(sources.length, HERO_LINES.length);
+
+    host.innerHTML = sources.map((src, i) => {
+      const isUrl = /^(https?:|data:|\.|\/)/.test(src);
+      const layer = isUrl
+        ? '<div class="stage-img" style="background-image:url(' + esc(src) + ')"></div>'
+        : '<div class="stage-img" style="background:' + src + '"></div>';
+      return '<div class="stage-panel"' + (i === 0 ? ' data-live' : '') + '>' + layer + '</div>';
+    }).join('');
+
+    if (say){
+      say.innerHTML = HERO_LINES.map((line, i) =>
+        '<p class="say"' + (i === 0 ? ' data-live' : '') + '>' + esc(line) + '</p>'
+      ).join('');
+    }
+
+    if (scrub){
+      scrub.innerHTML = HERO_LINES.map((_, i) =>
+        '<button aria-label="Panel ' + (i+1) + '"' + (i === 0 ? ' data-live' : '') + '></button>'
+      ).join('');
+      $$('#scrub button').forEach((b, i) => b.addEventListener('click', () => this.go(i, true)));
+    }
+
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduced && this.count > 1) this.start();
+  },
+
+  start(){
+    clearInterval(this.timer);
+    this.timer = setInterval(() => this.go((this.idx + 1) % this.count), 7000);
+  },
+
+  go(next, manual){
+    this.idx = next;
+    const panels = $$('.stage-panel');
+    panels.forEach((p, i) => p.toggleAttribute('data-live', i === next % panels.length));
+
+    const says = $$('.say');
+    says.forEach((s, i) => s.toggleAttribute('data-live', i === next % says.length));
+
+    const pips = $$('#scrub button');
+    pips.forEach((b, i) => {
+      b.removeAttribute('data-live');
+      b.style.animation = 'none';
+      void b.offsetWidth;
+      b.style.animation = '';
+      if (i === next % pips.length) b.setAttribute('data-live', '');
+    });
+
+    if (manual) this.start();
+  },
+
+  stop(){ clearInterval(this.timer); this.timer = null; }
+};
+
+/* ── 6. ROUTER ──────────────────────────────────────────── */
+
+const VIEW_TITLE = {
+  draft:   'Draft',
+  doc:     'Document',
+  read:    'Read a document',
+  matters: 'Matters',
+  clients: 'Clients',
+  plan:    'Business plan'
+};
+
+const Router = {
+  to(view){
+    App.view = view;
+
+    $$('.view').forEach(v => v.toggleAttribute('data-on', v.id === 'v-' + view));
+    $$('.rail-btn[data-view]').forEach(b => b.toggleAttribute('data-on', b.dataset.view === view));
+
+    const crumb = $('#crumb');
+    if (crumb) crumb.innerHTML = '<b>' + esc(VIEW_TITLE[view] || view) + '</b>';
+
+    if (view === 'matters') Matters.paint();
+    if (view === 'clients') Clients.paint();
+
+    const scroller = $('#v-' + view + ' .scroller');
+    if (scroller) scroller.scrollTop = 0;
+  },
+
+  enterApp(){
+    if (!Account.signedIn()){ this.showAuth('signin'); return; }
+    Stage.stop();
+    $('#s-land').removeAttribute('data-on');
+    $('#s-auth').removeAttribute('data-on');
+    $('#s-app').setAttribute('data-on', '');
+    this.to('draft');
+    if (!App.hasKey()) setTimeout(() => Keys.open(), 500);
+  },
+
+  showAuth(mode){
+    if (!Account.enabled){ this.enterApp(); return; }
+    Stage.stop();
+    Drawer.close();
+    Keys.close();
+    $('#s-land').removeAttribute('data-on');
+    $('#s-app').removeAttribute('data-on');
+    $('#s-auth').setAttribute('data-on', '');
+    Account.setMode(mode || 'signin');
+  },
+
+  toLanding(){
+    $('#s-auth').removeAttribute('data-on');
+    $('#s-app').removeAttribute('data-on');
+    $('#s-land').setAttribute('data-on', '');
+    Stage.start();
+  },
+
+  leaveApp(){
+    $('#s-app').removeAttribute('data-on');
+    $('#s-auth').removeAttribute('data-on');
+    $('#s-land').setAttribute('data-on', '');
+    Drawer.close();
+    Stage.start();
+  }
+
+};
+
+/* ── 7. COMMAND PALETTE ─────────────────────────────────── */
+
+const Palette = {
+  cursor: 0,
+  shown: [],
+
+  commands(){
+    const base = [
+      { group:'Go',    label:'Draft an agreement',  hint:'Pick an instrument and fill the terms', icon:'file',   key:'⌘1', run:() => Router.to('draft') },
+      { group:'Go',    label:'Read a document',     hint:'Parties, obligations, dates, risks',   icon:'search', key:'⌘2', run:() => Router.to('read') },
+      { group:'Go',    label:'Matters',             hint:'Open files, tasks and deadlines',      icon:'folder', key:'⌘3', run:() => Router.to('matters') },
+      { group:'Go',    label:'Clients',             hint:'What Frank knows about each client',   icon:'users',  key:'⌘4', run:() => Router.to('clients') },
+      { group:'Go',    label:'Business plan',       hint:'Investment Authority format',          icon:'chart',  key:'⌘5', run:() => Router.to('plan') },
+      { group:'Do',    label:'Ask Frank',           hint:'Open the paralegal drawer',            icon:'chat',   key:'⌘J', run:() => Drawer.open() },
+      { group:'Do',    label:'Keys and settings',   hint:'Anthropic and ElevenLabs',             icon:'gear',            run:() => Keys.open() },
+      { group:'Do',    label:'Export every date',   hint:'One .ics for all open matters',        icon:'cal',             run:() => Matters.exportAll() },
+      { group:'Do',    label:'Leave the workspace', hint:'Back to the front page',               icon:'exit',            run:() => Router.leaveApp() }
+    ];
+
+    INSTRUMENTS.forEach(it => base.push({
+      group:'Draft', label:'Draft a ' + it.name.toLowerCase() + ' agreement', hint:it.blurb, icon:it.icon,
+      run:() => { Router.to('draft'); Draft.pick(it.id); }
+    }));
+
+    if (App.doc.html){
+      base.push({ group:'Document', label:'Back to the current document', hint:App.doc.title, icon:'file', run:() => Router.to('doc') });
+      base.push({ group:'Document', label:'Export as Word',  hint:'.doc file', icon:'down', run:() => Doc.word() });
+      base.push({ group:'Document', label:'Export as PDF',   hint:'via print', icon:'down', run:() => Doc.pdf() });
+    }
+
+    App.matters.slice(0, 6).forEach(m => base.push({
+      group:'Matters', label:m.title, hint:m.client || 'Open matter', icon:'folder',
+      run:() => { Router.to('matters'); Matters.expand(m.id); }
+    }));
+
+    return base;
+  },
+
+  open(){
+    const scrim = $('#palette-scrim');
+    const input = $('#palette-input');
+    scrim.setAttribute('data-on', '');
+    input.value = '';
+    this.filter('');
+    setTimeout(() => { if (input.focus) input.focus(); }, 30);
+  },
+
+  close(){ $('#palette-scrim').removeAttribute('data-on'); },
+
+  filter(q){
+    const needle = q.trim().toLowerCase();
+    const all = this.commands();
+    this.shown = !needle ? all : all.filter(c =>
+      (c.label + ' ' + (c.hint || '') + ' ' + c.group).toLowerCase().includes(needle)
+    );
+    this.cursor = 0;
+    this.paint();
+  },
+
+  paint(){
+    const list = $('#palette-list');
+    if (!this.shown.length){
+      list.innerHTML = '<div style="padding:26px 14px;text-align:center;color:var(--text-3);font-size:13.5px">Nothing matches that.</div>';
+      return;
+    }
+    let html = '', lastGroup = '';
+    this.shown.forEach((c, i) => {
+      if (c.group !== lastGroup){ html += '<div class="palette-group">' + esc(c.group) + '</div>'; lastGroup = c.group; }
+      html += '<button class="palette-item" data-i="' + i + '"' + (i === this.cursor ? ' data-cursor' : '') + '>' +
+                '<span class="palette-item-mark">' + svg(c.icon) + '</span>' +
+                '<span style="flex:1;min-width:0"><b>' + esc(c.label) + '</b>' +
+                (c.hint ? '<span>' + esc(c.hint) + '</span>' : '') + '</span>' +
+                (c.key ? '<kbd>' + esc(c.key) + '</kbd>' : '') +
+              '</button>';
+    });
+    list.innerHTML = html;
+
+    $$('.palette-item', list).forEach(el => {
+      el.addEventListener('click', () => this.run(Number(el.dataset.i)));
+      el.addEventListener('mousemove', () => {
+        const i = Number(el.dataset.i);
+        if (i === this.cursor) return;
+        this.cursor = i;
+        $$('.palette-item', list).forEach(x => x.toggleAttribute('data-cursor', Number(x.dataset.i) === i));
+      });
+    });
+  },
+
+  move(step){
+    if (!this.shown.length) return;
+    this.cursor = (this.cursor + step + this.shown.length) % this.shown.length;
+    this.paint();
+    const active = $('.palette-item[data-cursor]');
+    if (active && active.scrollIntoView) active.scrollIntoView({ block:'nearest' });
+  },
+
+  run(i){
+    const cmd = this.shown[i == null ? this.cursor : i];
+    if (!cmd) return;
+    this.close();
+    setTimeout(() => cmd.run(), 60);
+  }
+};
+
+/* ── 8. DRAFT ───────────────────────────────────────────── */
+
+/* Each instrument declares its own fields. No template code, no
+   thousand-line builders — Frank writes the instrument itself.   */
+const FORMS = {
+  founders: [
+    ['Company name', 'company', 'text', 'Northwind Technologies Ltd.'],
+    ['Founders and equity split', 'founders', 'area', 'Dana Levi — 45%, CTO\nYossi Mor — 45%, CEO\nAdvisory pool — 10%'],
+    ['Vesting', 'vesting', 'text', '4 years, 1 year cliff'],
+    ['What the company does', 'business', 'text', 'Warehouse robotics for cold storage']
+  ],
+  sha: [
+    ['Company name', 'company', 'text', 'Northwind Technologies Ltd.'],
+    ['Shareholders and holdings', 'holders', 'area', 'Founders 62%\nSeed investors 28%\nESOP 10%'],
+    ['Board composition', 'board', 'text', '2 founder seats, 1 investor seat, 1 independent'],
+    ['Transfer restrictions to include', 'transfer', 'text', 'ROFR, tag-along, drag-along at 75%']
+  ],
+  spa: [
+    ['Target company', 'target', 'text', 'Northwind Technologies Ltd.'],
+    ['Buyer', 'buyer', 'text', 'Acquirer Holdings Ltd.'],
+    ['Seller', 'seller', 'text', 'The founders, jointly'],
+    ['Consideration', 'price', 'text', '₪24,000,000 — 80% at completion, 20% earnout'],
+    ['Conditions to completion', 'conditions', 'area', 'Regulatory approval\nKey employee retention\nNo material adverse change']
+  ],
+  investment: [
+    ['Company name', 'company', 'text', 'Northwind Technologies Ltd.'],
+    ['Investor', 'investor', 'text', 'Meridian Ventures'],
+    ['Amount and pre-money', 'amount', 'text', '$3M on $12M pre-money'],
+    ['Security', 'security', 'text', 'Series A Preferred, 1x non-participating'],
+    ['Investor rights to include', 'rights', 'area', 'Board seat\nPro-rata\nInformation rights\nWeighted average anti-dilution']
+  ],
+  supply: [
+    ['Supplier', 'supplier', 'text', ''],
+    ['Buyer', 'buyer', 'text', ''],
+    ['What is supplied', 'goods', 'area', ''],
+    ['Pricing and payment terms', 'terms', 'text', 'Net 30 from invoice'],
+    ['Term and termination', 'term', 'text', '24 months, 90 days notice']
+  ],
+  distribution: [
+    ['Supplier', 'supplier', 'text', ''],
+    ['Distributor', 'distributor', 'text', ''],
+    ['Territory', 'territory', 'text', 'Israel'],
+    ['Exclusive?', 'exclusive', 'text', 'Exclusive, subject to annual targets'],
+    ['Minimum purchase targets', 'targets', 'text', '']
+  ],
+  lease: [
+    ['Landlord', 'landlord', 'text', ''],
+    ['Tenant', 'tenant', 'text', ''],
+    ['The property', 'property', 'area', 'Apartment 2403, Rom Tower, Tel Aviv — 4 rooms, parking 222 and 223, storage 146'],
+    ['Rent and term', 'rent', 'text', '₪15,000 per month, 1 Aug 2025 to 31 Jul 2027'],
+    ['Security', 'security', 'text', 'Promissory note ₪120,000, two guarantors, bank guarantee 3 months']
+  ],
+  nda: [
+    ['Disclosing party', 'discloser', 'text', ''],
+    ['Receiving party', 'recipient', 'text', ''],
+    ['Mutual or one-way', 'mutual', 'text', 'Mutual'],
+    ['Purpose of disclosure', 'purpose', 'text', 'Evaluating a commercial partnership'],
+    ['Confidentiality period', 'period', 'text', '5 years from disclosure']
+  ]
+};
+
+const Draft = {
+  mount(){
+    const grid = $('#picker');
+    grid.innerHTML = INSTRUMENTS.map(it =>
+      '<button class="pick" data-id="' + it.id + '">' +
+        '<span class="pick-mark">' + svg(it.icon) + '</span>' +
+        '<b>' + esc(it.name) + '</b><span>' + esc(it.blurb) + '</span>' +
+      '</button>'
+    ).join('');
+    $$('.pick', grid).forEach(b => b.addEventListener('click', () => this.pick(b.dataset.id)));
+  },
+
+  pick(id){
+    App.instrument = id;
+    $$('.pick').forEach(b => b.toggleAttribute('data-on', b.dataset.id === id));
+
+    const fields = FORMS[id] || [];
+    $('#form-slot').innerHTML =
+      '<div class="legend">Terms</div>' +
+      fields.map(([label, name, type, ph]) => {
+        const input = type === 'area'
+          ? '<textarea class="inp" id="f-' + name + '" rows="3" placeholder="' + esc(ph) + '"></textarea>'
+          : '<input class="inp" id="f-' + name + '" placeholder="' + esc(ph) + '">';
+        return '<div class="field"><label for="f-' + name + '">' + esc(label) + '</label>' + input + '</div>';
+      }).join('');
+
+    $('#draft-form').hidden = false;
+    setTimeout(() => {
+      const first = $('#form-slot .inp');
+      if (first && first.focus) first.focus();
+      const form = $('#draft-form');
+      if (form && form.scrollIntoView) form.scrollIntoView({ behavior:'smooth', block:'start' });
+    }, 60);
+  },
+
+  async run(){
+    if (App.busy) return;
+    if (!App.instrument){ toast('Pick what you are drafting first', 'bad'); return; }
+    if (!App.hasKey()){ Keys.open(); return; }
+
+    const inst = INSTRUMENTS.find(i => i.id === App.instrument);
+    const fields = FORMS[App.instrument] || [];
+    const lang  = val('f-lang')  || 'en';
+    const law   = val('f-law')   || 'Israeli';
+    const notes = val('f-notes');
+
+    const given = fields
+      .map(([label, name]) => {
+        const v = val('f-' + name);
+        return v ? '- ' + label + ': ' + v : null;
+      })
+      .filter(Boolean).join('\n');
+
+    working(true);
+    toast('Frank is drafting — this takes a moment');
+
+    const system =
+      'You are Frank, a senior Israeli commercial lawyer drafting for a practising attorney. ' +
+      'Produce a complete, execution-ready agreement. Never leave bracketed placeholders — where a ' +
+      'detail is missing, draft the market-standard position and carry on. Number clauses. ' +
+      'Include definitions, the operative clauses, boilerplate (notices, governing law, jurisdiction, ' +
+      'entire agreement, amendment, severability) and a signature block. ' +
+      (law === 'Israeli'
+        ? 'Apply Israeli law and name statutes properly — חוק החברות תשנ"ט-1999, חוק החוזים (חלק כללי) תשל"ג-1973, ' +
+          'חוק השכירות והשאילה תשל"א-1971, and where a lease is unprotected, the express waiver of חוק הגנת הדייר תשל"ב-1972. '
+        : 'Apply ' + law + ' law. ') +
+      (lang === 'he'
+        ? 'Write the entire agreement in Hebrew, in the register an Israeli commercial firm uses. '
+        : 'Write in English. ') +
+      'Output markdown only: # for the title, ## for clause headings, no preamble, no commentary.';
+
+    const prompt =
+      'Draft a ' + inst.name + ' agreement.\n\n' +
+      (given || '(No terms supplied — draft a clean market-standard version.)') +
+      '\n\nGoverning law: ' + law +
+      (notes ? '\n\nFrom the instructing lawyer: ' + notes : '');
+
+    try {
+      const md = await Api.send({ max: 4000, feature: 'draft', system, messages:[{ role:'user', content: prompt }] });
+      Doc.show({
+        title: inst.name + ' Agreement',
+        html: render(md),
+        dir: lang === 'he' ? 'rtl' : 'ltr',
+        kind: inst.name
+      });
+      toast('Draft ready — read it before it leaves');
+      Account.log('draft', { instrument: App.instrument, lang, law });
+    } catch (err){
+      toast(err.message, 'bad');
+      if (err.authFailed) Keys.open();
+    } finally {
+      working(false);
+    }
+  }
+};
+
+/* ── 9. DOCUMENT ────────────────────────────────────────── */
+
+const Doc = {
+  editing: false,
+
+  show(doc){
+    App.doc = doc;
+    const el = $('#doc');
+    el.innerHTML = doc.html;
+    el.dir = doc.dir || 'ltr';
+    el.contentEditable = 'false';
+    this.editing = false;
+    $('#btn-edit').removeAttribute('data-on');
+
+    const crumb = $('#crumb');
+    if (crumb) crumb.innerHTML = '<b>' + esc(doc.title) + '</b>';
+
+    $$('.view').forEach(v => v.toggleAttribute('data-on', v.id === 'v-doc'));
+    $$('.rail-btn[data-view]').forEach(b => b.removeAttribute('data-on'));
+    App.view = 'doc';
+    const sc = $('#doc-scroll'); if (sc) sc.scrollTop = 0;
+  },
+
+  toggleEdit(){
+    this.editing = !this.editing;
+    const el = $('#doc');
+    el.contentEditable = this.editing ? 'true' : 'false';
+    $('#btn-edit').toggleAttribute('data-on', this.editing);
+    if (this.editing){ el.focus(); toast('Editing — click Edit again when you are done'); }
+    else { App.doc.html = el.innerHTML; toast('Changes kept'); }
+  },
+
+  word(){
+    if (!App.doc.html){ toast('Nothing to export yet', 'bad'); return; }
+    const rtl = App.doc.dir === 'rtl';
+    const html =
+      '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(App.doc.title) + '</title>' +
+      '<style>body{font-family:Georgia,"Times New Roman",serif;font-size:11.5pt;line-height:1.7;' +
+      'max-width:17cm;margin:2.5cm auto;' + (rtl ? 'direction:rtl;text-align:right;' : '') + '}' +
+      'h1{font-size:17pt;text-align:center;margin-bottom:1.4em;font-weight:normal}' +
+      'h2{font-size:12.5pt;margin:1.6em 0 .6em;font-weight:bold}' +
+      'h3{font-size:11.5pt;margin:1.2em 0 .4em;font-weight:bold}' +
+      'p{margin:0 0 .7em}li{margin-bottom:.35em}' +
+      'table{border-collapse:collapse;width:100%;margin:1em 0;font-size:10pt}' +
+      'th,td{border:1px solid #999;padding:5pt 7pt;text-align:' + (rtl ? 'right' : 'left') + '}' +
+      '</style></head><body>' + $('#doc').innerHTML + '</body></html>';
+
+    const blob = new Blob(['\ufeff', html], { type:'application/msword' });
+    this.download(blob, this.filename('doc'));
+    toast('Word file saved');
+  },
+
+  pdf(){
+    if (!App.doc.html){ toast('Nothing to export yet', 'bad'); return; }
+    toast('Choose “Save as PDF” in the print dialog');
+    setTimeout(() => window.print(), 400);
+  },
+
+  async copy(){
+    if (!App.doc.html){ toast('Nothing to copy yet', 'bad'); return; }
+    try {
+      await navigator.clipboard.writeText($('#doc').innerText);
+      toast('Copied');
+    } catch { toast('Your browser blocked the clipboard', 'bad'); }
+  },
+
+  filename(ext){
+    const slug = (App.doc.title || 'document').replace(/[^\w\u0590-\u05FF -]/g,'').trim().replace(/\s+/g,'-').toLowerCase();
+    return slug + '.' + ext;
+  },
+
+  download(blob, name){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1500);
+  },
+
+  /* Turn the open document into a matter, using Frank to extract it. */
+  async toMatter(){
+    if (!App.doc.html){ toast('Nothing to file yet', 'bad'); return; }
+    if (!App.hasKey()){ Keys.open(); return; }
+    working(true);
+    toast('Frank is opening a matter');
+    try {
+      const matter = await Matters.extract(
+        [{ type:'text', text: stripTags($('#doc').innerHTML).slice(0, 12000) }],
+        App.doc.title
+      );
+      Matters.add(matter);
+      Router.to('matters');
+      toast('Matter opened');
+    } catch (err){ toast(err.message, 'bad'); }
+    finally { working(false); }
+  },
+
+  /* Send the open document to Frank for a risk read. */
+  review(){
+    if (!App.doc.html){ toast('Nothing to review yet', 'bad'); return; }
+    Drawer.open();
+    Drawer.ask(
+      'Review the document below as opposing counsel would. Give me: the three clauses most likely ' +
+      'to cause a dispute, anything one-sided against my client, and what a careful lawyer would have ' +
+      'added but is missing. Be specific and cite clause numbers.\n\n---\n' +
+      stripTags($('#doc').innerHTML).slice(0, 9000)
+    );
+  }
+};
+
+/* ── 10. READ ───────────────────────────────────────────── */
+
+const Read = {
+  async handle(file){
+    if (!file) return;
+    if (!App.hasKey()){ Keys.open(); return; }
+
+    const out = $('#read-out');
+    out.innerHTML =
+      '<div style="display:flex;align-items:center;gap:11px;padding:var(--s5);border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface)">' +
+      '<span class="spin"></span><span style="font-size:13.5px;color:var(--text-2)">Frank is reading ' + esc(file.name) + '…</span></div>';
+    working(true);
+
+    const system =
+      'You are Frank, a senior Israeli commercial lawyer reading a document for the instructing attorney. ' +
+      'Be concrete and cite clause numbers. Return markdown with these headings exactly: ' +
+      '## What this is, ## Parties, ## What each side must do, ## Dates that bite, ## Where the exposure sits, ## What is missing. ' +
+      'Under "Dates that bite" list every deadline with its date. Under "What is missing" name the clauses a careful ' +
+      'lawyer would expect and cannot find. No preamble.';
+
+    try {
+      const part = await Api.part(file);
+      const md = await Api.send({
+        max: 2600, feature: 'read', system,
+        messages: [{ role:'user', content: [part, { type:'text', text:'Read this and report.' }] }]
+      });
+
+      out.innerHTML =
+        '<div style="border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);padding:var(--s6)">' +
+          '<div style="display:flex;align-items:center;gap:10px;margin-bottom:var(--s5);padding-bottom:var(--s4);border-bottom:1px solid var(--line)">' +
+            '<span style="color:var(--ledger)">' + svg('file', 17) + '</span>' +
+            '<b style="font-size:14px;flex:1;min-width:0">' + esc(file.name) + '</b>' +
+            '<button class="tool" data-act="read-file">' + svg('folder', 14) + 'Open as matter</button>' +
+          '</div>' +
+          '<div class="bubble" style="background:none;padding:0;font-size:14px;line-height:1.72">' + render(md) + '</div>' +
+        '</div>';
+
+      this.lastFile = file;
+      toast('Read complete');
+      Account.log('read', { file: file.name });
+    } catch (err){
+      out.innerHTML = '<div class="notice"><b>Could not read that</b>' + esc(err.message) + '</div>';
+      if (err.authFailed) Keys.open();
+    } finally { working(false); }
+  },
+
+  async fileIt(){
+    if (!this.lastFile) return;
+    working(true);
+    toast('Frank is opening a matter');
+    try {
+      const part = await Api.part(this.lastFile);
+      const matter = await Matters.extract([part], this.lastFile.name);
+      Matters.add(matter);
+      Router.to('matters');
+      toast('Matter opened');
+    } catch (err){ toast(err.message, 'bad'); }
+    finally { working(false); }
+  }
+};
+
+/* ── 11. MATTERS ────────────────────────────────────────── */
+
+const Matters = {
+  open: null,
+
+  async extract(parts, label){
+    const system =
+      'You are Frank, a paralegal opening a matter file. Read the document and return ONLY a JSON object, ' +
+      'no markdown fence, with these keys: title (short, max 6 words), client (party name), clientEmail ' +
+      '(or null), kind (document type), summary (2 sentences), urgency ("high"|"normal"|"low"), ' +
+      'tasks (array of {title, due (YYYY-MM-DD or null), priority ("high"|"normal")}), ' +
+      'dates (array of {title, date (YYYY-MM-DD), kind ("deadline"|"meeting"|"filing"|"hearing")}), ' +
+      'risks (array of strings), next (single sentence — the immediate next step). ' +
+      'Extract every real deadline you can find. Invent nothing.';
+
+    const data = await Api.json({
+      max: 1800, feature: 'matter', system,
+      messages: [{ role:'user', content: parts.concat([{ type:'text', text:'Open a matter from this.' }]) }]
+    });
+
+    return {
+      id: 'm' + Date.now(),
+      title: (data && data.title) || label.replace(/\.[^.]+$/,''),
+      client: (data && data.client) || 'Unnamed party',
+      clientEmail: (data && data.clientEmail) || null,
+      kind: (data && data.kind) || 'Document',
+      summary: (data && data.summary) || '',
+      urgency: (data && data.urgency) || 'normal',
+      tasks: ((data && data.tasks) || []).map(t => ({ ...t, done:false })),
+      dates: (data && data.dates) || [],
+      risks: (data && data.risks) || [],
+      next: (data && data.next) || '',
+      source: label,
+      opened: new Date().toISOString()
+    };
+  },
+
+  add(matter){
+    Account.log('matter', { kind: matter.kind });
+    App.matters.unshift(matter);
+    App.saveMatters();
+    this.paint();
+  },
+
+  paint(){
+    const host = $('#matters-out');
+    if (!host) return;
+
+    if (!App.matters.length){
+      host.innerHTML =
+        '<div class="empty"><span class="empty-mark">' + svg('folder', 36) + '</span>' +
+        '<h3>No matters open</h3>' +
+        '<p>Give Frank a contract, a letter or a brief. He pulls out the client, the tasks and every date, and opens a file.</p></div>';
+      return;
+    }
+
+    host.innerHTML = '<div class="records">' + App.matters.map(m => {
+      const done = m.tasks.filter(t => t.done).length;
+      const total = m.tasks.length;
+      const soonest = m.dates
+        .filter(d => d.date && daysUntil(d.date) !== null && daysUntil(d.date) >= 0)
+        .sort((a,b) => new Date(a.date) - new Date(b.date))[0];
+      const tight = soonest && daysUntil(soonest.date) <= 7;
+      const isOpen = this.open === m.id;
+
+      return '<div class="record" data-m="' + m.id + '">' +
+        '<div class="record-top">' +
+          '<span class="record-mark">' + esc(initials(m.client)) + '</span>' +
+          '<span class="record-id"><b>' + esc(m.title) + '</b><span>' + esc(m.client) + ' — ' + esc(m.kind) + '</span></span>' +
+          (m.urgency === 'high' ? '<span class="tag" data-tone="urgent">Pressing</span>' : '') +
+        '</div>' +
+        (m.summary ? '<p>' + esc(m.summary) + '</p>' : '') +
+        (isOpen ? this.detail(m) : '') +
+        '<div class="record-foot">' +
+          (total ? '<span style="font-size:12px;color:var(--text-3);white-space:nowrap">' + done + ' of ' + total + '</span>' +
+                   '<span class="meter"><i style="width:' + (total ? Math.round(100*done/total) : 0) + '%"></i></span>' : '') +
+          (soonest ? '<span class="tag"' + (tight ? ' data-tone="urgent"' : '') + '>' +
+                      esc(soonest.title) + ' — ' + whenLabel(soonest.date) + '</span>' : '') +
+          '<span style="flex:1"></span>' +
+          '<button class="tool" data-open="' + m.id + '">' + (isOpen ? 'Close' : 'Open') + '</button>' +
+          '<button class="tool" data-ask="' + m.id + '">Ask Frank</button>' +
+          '<button class="tool" data-ics="' + m.id + '">Dates</button>' +
+          (m.clientEmail ? '<button class="tool" data-mail="' + m.id + '">Write to client</button>' : '') +
+          '<button class="tool" data-drop="' + m.id + '" style="color:var(--alarm)">Close file</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+
+    $$('[data-open]', host).forEach(b => b.addEventListener('click', () => this.expand(b.dataset.open)));
+    $$('[data-ask]', host).forEach(b => b.addEventListener('click', () => this.ask(b.dataset.ask)));
+    $$('[data-ics]', host).forEach(b => b.addEventListener('click', () => this.exportOne(b.dataset.ics)));
+    $$('[data-mail]', host).forEach(b => b.addEventListener('click', () => this.mail(b.dataset.mail)));
+    $$('[data-drop]', host).forEach(b => b.addEventListener('click', () => this.drop(b.dataset.drop)));
+    $$('[data-tick]', host).forEach(b => b.addEventListener('click', () => this.tick(b.dataset.m, Number(b.dataset.tick))));
+  },
+
+  detail(m){
+    let html = '<div style="margin-top:var(--s4);padding-top:var(--s4);border-top:1px solid var(--line)">';
+
+    if (m.tasks.length){
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:7px">Tasks</div>';
+      html += m.tasks.map((t, i) =>
+        '<div class="tick"' + (t.done ? ' data-done' : '') + '>' +
+          '<span class="tick-box"' + (t.done ? ' data-done' : '') + ' data-m="' + m.id + '" data-tick="' + i + '" role="checkbox" tabindex="0"></span>' +
+          '<span class="tick-text">' + esc(t.title) + '</span>' +
+          (t.due ? '<span class="tick-when">' + esc(t.due) + '</span>' : '') +
+        '</div>'
+      ).join('');
+    }
+
+    if (m.dates.length){
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text-2);margin:var(--s4) 0 7px">Diary</div>';
+      html += m.dates.map(d =>
+        '<div class="tick"><span class="tick-text">' + esc(d.title) + '</span>' +
+        '<span class="tick-when">' + esc(d.date) + ' · ' + whenLabel(d.date) + '</span></div>'
+      ).join('');
+    }
+
+    if (m.risks.length){
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text-2);margin:var(--s4) 0 7px">Exposure</div>';
+      html += m.risks.map(r =>
+        '<div style="display:flex;gap:9px;font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:6px">' +
+        '<span style="color:var(--alarm);flex:none">▸</span>' + esc(r) + '</div>'
+      ).join('');
+    }
+
+    if (m.next){
+      html += '<div style="margin-top:var(--s4);padding:11px 14px;background:rgba(168,129,63,.08);border-left:2px solid var(--brass);border-radius:0 8px 8px 0;font-size:13.5px;line-height:1.6">' +
+              '<b style="font-weight:600">Next</b> — ' + esc(m.next) + '</div>';
+    }
+
+    return html + '</div>';
+  },
+
+  expand(id){ this.open = this.open === id ? null : id; this.paint(); },
+
+  tick(id, i){
+    const m = App.matters.find(x => x.id === id);
+    if (!m || !m.tasks[i]) return;
+    m.tasks[i].done = !m.tasks[i].done;
+    App.saveMatters();
+    this.paint();
+  },
+
+  ask(id){
+    const m = App.matters.find(x => x.id === id);
+    if (!m) return;
+    Drawer.open();
+    Drawer.ask(
+      'Matter: ' + m.title + '. Client: ' + m.client + '. ' + m.kind + '.\n' +
+      m.summary + '\n' +
+      (m.tasks.length ? 'Outstanding: ' + m.tasks.filter(t => !t.done).map(t => t.title).join('; ') + '\n' : '') +
+      (m.risks.length ? 'Known exposure: ' + m.risks.join('; ') + '\n' : '') +
+      '\nWhat should I do first, and what am I likely to be missing?'
+    );
+  },
+
+  mail(id){
+    const m = App.matters.find(x => x.id === id);
+    if (!m || !m.clientEmail) return;
+    const body =
+      'Dear ' + m.client + ',\n\nAn update on ' + m.title + '.\n\n' + (m.summary || '') +
+      (m.next ? '\n\nNext step: ' + m.next : '') +
+      '\n\nDo come back to me with any questions.\n\nKind regards,\nPRA Legal';
+    window.open('mailto:' + encodeURIComponent(m.clientEmail) +
+      '?subject=' + encodeURIComponent('Update — ' + m.title) +
+      '&body=' + encodeURIComponent(body));
+  },
+
+  drop(id){
+    const m = App.matters.find(x => x.id === id);
+    if (!m) return;
+    if (!confirm('Close the file on “' + m.title + '”? This cannot be undone.')) return;
+    App.matters = App.matters.filter(x => x.id !== id);
+    App.saveMatters();
+    this.paint();
+    toast('File closed');
+  },
+
+  ics(matters){
+    let s = 'BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//PRA Legal//Frank//EN\r\nCALSCALE:GREGORIAN\r\n';
+    const stamp = new Date().toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+    let n = 0;
+    matters.forEach(m => {
+      const rows = m.dates.concat(m.tasks.filter(t => t.due).map(t => ({ title:'Task — ' + t.title, date:t.due })));
+      rows.forEach(d => {
+        if (!d.date) return;
+        const day = String(d.date).replace(/-/g,'');
+        if (day.length !== 8) return;
+        n++;
+        s += 'BEGIN:VEVENT\r\nUID:pra-' + m.id + '-' + n + '@pralegal\r\nDTSTAMP:' + stamp +
+             '\r\nDTSTART;VALUE=DATE:' + day +
+             '\r\nSUMMARY:' + String(d.title).replace(/[,;\\]/g,' ') + ' (' + String(m.client).replace(/[,;\\]/g,' ') + ')' +
+             '\r\nEND:VEVENT\r\n';
+      });
+    });
+    s += 'END:VCALENDAR';
+    return { text:s, count:n };
+  },
+
+  exportOne(id){
+    const m = App.matters.find(x => x.id === id);
+    if (!m) return;
+    const { text, count } = this.ics([m]);
+    if (!count){ toast('No dates in this matter', 'bad'); return; }
+    Doc.download(new Blob([text], { type:'text/calendar' }), m.title.replace(/\s+/g,'-').toLowerCase() + '.ics');
+    toast(count + ' date' + (count === 1 ? '' : 's') + ' exported');
+  },
+
+  exportAll(){
+    if (!App.matters.length){ toast('No matters open', 'bad'); return; }
+    const { text, count } = this.ics(App.matters);
+    if (!count){ toast('No dates to export', 'bad'); return; }
+    Doc.download(new Blob([text], { type:'text/calendar' }), 'pra-legal-diary.ics');
+    toast(count + ' dates exported');
+  },
+
+  async fromFile(file){
+    if (!file) return;
+    if (!App.hasKey()){ Keys.open(); return; }
+    working(true);
+    toast('Frank is reading ' + file.name);
+    try {
+      const part = await Api.part(file);
+      this.add(await this.extract([part], file.name));
+      toast('Matter opened');
+    } catch (err){ toast(err.message, 'bad'); if (err.authFailed) Keys.open(); }
+    finally { working(false); }
+  }
+};
+
+/* ── 12. CLIENTS ────────────────────────────────────────── */
+
+const Clients = {
+  open: null,
+
+  async learn(files){
+    if (!files || !files.length) return;
+    if (!App.hasKey()){ Keys.open(); return; }
+
+    working(true);
+    toast('Frank is reading ' + files.length + ' file' + (files.length === 1 ? '' : 's'));
+
+    const system =
+      'You are Frank, building a client file from the documents supplied. Return ONLY a JSON object, ' +
+      'no fence, with: name, kind (individual/company/startup/firm), email (or null), sector, ' +
+      'summary (2 sentences on who they are), needs (array), done (array — what has already been agreed ' +
+      'or completed), owed (array — agreements or work still outstanding), dates (array of {title, date}), ' +
+      'risks (array), strategy (2 sentences — how to handle this client), next (array of 3 immediate steps), ' +
+      'facts (array of important specifics), tags (array of 3-5 short labels). Invent nothing.';
+
+    try {
+      const parts = [];
+      for (const f of Array.from(files).slice(0, 5)) parts.push(await Api.part(f));
+
+      const data = await Api.json({
+        max: 2200, feature: 'client', system,
+        messages: [{ role:'user', content: parts.concat([{ type:'text', text:'Build the client file.' }]) }]
+      });
+
+      if (!data || !data.name) throw new Error('Frank could not identify a client in those files.');
+
+      const incoming = {
+        id: 'c' + Date.now(),
+        name: data.name,
+        kind: data.kind || '',
+        email: data.email || null,
+        sector: data.sector || '',
+        summary: data.summary || '',
+        needs: data.needs || [],
+        done: data.done || [],
+        owed: data.owed || [],
+        dates: data.dates || [],
+        risks: data.risks || [],
+        strategy: data.strategy || '',
+        next: data.next || [],
+        facts: data.facts || [],
+        tags: data.tags || [],
+        files: Array.from(files).map(f => f.name),
+        updated: new Date().toISOString()
+      };
+
+      const firstWord = String(incoming.name).split(/\s+/)[0].toLowerCase();
+      const existing = App.clients.find(c => String(c.name).toLowerCase().includes(firstWord));
+
+      if (existing){
+        const merge = (a, b) => {
+          const seen = new Set();
+          return a.concat(b).filter(x => {
+            const k = (typeof x === 'string' ? x : JSON.stringify(x)).toLowerCase().slice(0, 40);
+            if (seen.has(k)) return false;
+            seen.add(k); return true;
+          });
+        };
+        ['needs','done','owed','dates','risks','next','facts','tags','files'].forEach(k => {
+          existing[k] = merge(existing[k] || [], incoming[k] || []);
+        });
+        if (incoming.strategy) existing.strategy = incoming.strategy;
+        if (incoming.summary)  existing.summary  = incoming.summary;
+        existing.updated = incoming.updated;
+        toast('Updated ' + existing.name);
+      } else {
+        App.clients.unshift(incoming);
+        toast('Added ' + incoming.name);
+      }
+
+      App.saveClients();
+      this.paint();
+      Account.log('client', { files: files.length });
+    } catch (err){
+      toast(err.message, 'bad');
+      if (err.authFailed) Keys.open();
+    } finally { working(false); }
+  },
+
+  paint(){
+    const host = $('#clients-out');
+    if (!host) return;
+
+    if (!App.clients.length){
+      host.innerHTML =
+        '<div class="empty"><span class="empty-mark">' + svg('users', 36) + '</span>' +
+        '<h3>Frank does not know your clients yet</h3>' +
+        '<p>Give him a few files on one client — contracts, letters, notes. He works out who they are, what has been done, and what is still owed.</p></div>';
+      return;
+    }
+
+    host.innerHTML = '<div class="records">' + App.clients.map(c => {
+      const isOpen = this.open === c.id;
+      const tight = (c.dates || []).some(d => { const n = daysUntil(d.date); return n !== null && n >= 0 && n <= 7; });
+      return '<div class="record">' +
+        '<div class="record-top">' +
+          '<span class="record-mark">' + esc(initials(c.name)) + '</span>' +
+          '<span class="record-id"><b>' + esc(c.name) + '</b><span>' +
+            esc([c.kind, c.sector].filter(Boolean).join(' — ')) + '</span></span>' +
+          (tight ? '<span class="tag" data-tone="urgent">Date soon</span>' : '') +
+        '</div>' +
+        (c.summary ? '<p>' + esc(c.summary) + '</p>' : '') +
+        (isOpen ? this.detail(c) : '') +
+        '<div class="record-foot">' +
+          ((c.owed || []).length ? '<span class="tag" data-tone="brass">' + c.owed.length + ' still owed</span>' : '') +
+          (c.tags || []).slice(0, 3).map(t => '<span class="tag">' + esc(t) + '</span>').join('') +
+          '<span style="flex:1"></span>' +
+          '<button class="tool" data-copen="' + c.id + '">' + (isOpen ? 'Close' : 'Open') + '</button>' +
+          '<button class="tool" data-cask="' + c.id + '">Ask Frank</button>' +
+          '<button class="tool" data-cmatter="' + c.id + '">Open matter</button>' +
+          '<button class="tool" data-cdrop="' + c.id + '" style="color:var(--alarm)">Forget</button>' +
+        '</div>' +
+      '</div>';
+    }).join('') + '</div>';
+
+    $$('[data-copen]', host).forEach(b => b.addEventListener('click', () => { this.open = this.open === b.dataset.copen ? null : b.dataset.copen; this.paint(); }));
+    $$('[data-cask]', host).forEach(b => b.addEventListener('click', () => this.ask(b.dataset.cask)));
+    $$('[data-cmatter]', host).forEach(b => b.addEventListener('click', () => this.toMatter(b.dataset.cmatter)));
+    $$('[data-cdrop]', host).forEach(b => b.addEventListener('click', () => this.drop(b.dataset.cdrop)));
+  },
+
+  detail(c){
+    const block = (title, items, colour, mark) => {
+      if (!items || !items.length) return '';
+      return '<div style="font-size:12px;font-weight:600;color:var(--text-2);margin:var(--s4) 0 7px">' + title + '</div>' +
+        items.map(x => {
+          const text = typeof x === 'string' ? x : (x.title || '') + (x.date ? ' — ' + x.date : '');
+          return '<div style="display:flex;gap:9px;font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:6px">' +
+                 '<span style="color:' + colour + ';flex:none">' + mark + '</span>' + esc(text) + '</div>';
+        }).join('');
+    };
+
+    let html = '<div style="margin-top:var(--s4);padding-top:var(--s4);border-top:1px solid var(--line)">';
+    if (c.strategy){
+      html += '<div style="padding:12px 15px;background:rgba(28,59,48,.06);border-left:2px solid var(--ledger);border-radius:0 8px 8px 0;font-size:13.5px;line-height:1.65;margin-bottom:var(--s3)">' +
+              '<b style="font-weight:600">How to handle them</b><br>' + esc(c.strategy) + '</div>';
+    }
+    html += block('What they need', c.needs, 'var(--brass)', '▸');
+    html += block('Already done', c.done, 'var(--ledger)', '✓');
+    html += block('Still owed', c.owed, 'var(--brass)', '○');
+    html += block('Dates', c.dates, 'var(--alarm)', '◆');
+    html += block('Exposure', c.risks, 'var(--alarm)', '▸');
+    html += block('Worth knowing', c.facts, 'var(--text-3)', '·');
+
+    if ((c.next || []).length){
+      html += '<div style="font-size:12px;font-weight:600;color:var(--text-2);margin:var(--s4) 0 7px">Next three steps</div>';
+      html += c.next.map((s, i) =>
+        '<div style="display:flex;gap:10px;font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:7px">' +
+        '<span style="background:rgba(28,59,48,.1);color:var(--ledger);width:19px;height:19px;border-radius:5px;' +
+        'display:grid;place-items:center;font-size:11px;font-weight:700;flex:none">' + (i+1) + '</span>' + esc(s) + '</div>'
+      ).join('');
+    }
+    if ((c.files || []).length){
+      html += '<div style="font-size:11.5px;color:var(--text-3);margin-top:var(--s4)">From: ' + esc(c.files.join(', ')) + '</div>';
+    }
+    return html + '</div>';
+  },
+
+  ask(id){
+    const c = App.clients.find(x => x.id === id);
+    if (!c) return;
+    Drawer.open();
+    Drawer.ask(
+      'Client: ' + c.name + ' (' + [c.kind, c.sector].filter(Boolean).join(', ') + ').\n' +
+      c.summary + '\n' +
+      ((c.needs||[]).length ? 'Needs: ' + c.needs.join('; ') + '\n' : '') +
+      ((c.owed||[]).length ? 'Still owed: ' + c.owed.join('; ') + '\n' : '') +
+      (c.strategy ? 'Current approach: ' + c.strategy + '\n' : '') +
+      '\nWhat should I prioritise with this client, and what am I not seeing?'
+    );
+  },
+
+  toMatter(id){
+    const c = App.clients.find(x => x.id === id);
+    if (!c) return;
+    Matters.add({
+      id: 'm' + Date.now(),
+      title: c.name + ' — general file',
+      client: c.name,
+      clientEmail: c.email,
+      kind: 'Client file',
+      summary: c.summary || '',
+      urgency: (c.dates || []).some(d => { const n = daysUntil(d.date); return n !== null && n >= 0 && n <= 7; }) ? 'high' : 'normal',
+      tasks: (c.next || []).map((s, i) => ({ title:s, due:null, priority: i === 0 ? 'high' : 'normal', done:false })),
+      dates: (c.dates || []).map(d => ({ title:d.title || String(d), date:d.date || '', kind:'deadline' })),
+      risks: c.risks || [],
+      next: (c.next || [])[0] || '',
+      source: 'Client file',
+      opened: new Date().toISOString()
+    });
+    Router.to('matters');
+    toast('Matter opened for ' + c.name);
+  },
+
+  drop(id){
+    const c = App.clients.find(x => x.id === id);
+    if (!c) return;
+    if (!confirm('Have Frank forget everything about ' + c.name + '?')) return;
+    App.clients = App.clients.filter(x => x.id !== id);
+    App.saveClients();
+    this.paint();
+    toast('Forgotten');
+  }
+};
+
+/* ── 13. BUSINESS PLAN ──────────────────────────────────── */
+
+const TRACKS = {
+  tkouma:      'מסלול תקומה א — 50% grant for businesses in the Chevev Tkouma area',
+  manufacture: 'מסלול ייצור — manufacturing expansion in a designated industrial zone',
+  tourism:     'מסלול תיירות — tourism',
+  innovation:  'מסלול חדשנות — innovation and startups',
+  general:     'General track'
+};
+
+const Plan = {
+  async run(){
+    if (App.busy) return;
+    if (!App.hasKey()){ Keys.open(); return; }
+
+    const get = val;
+    const company = get('bp-co'), who = get('bp-who'), sector = get('bp-sector');
+
+    if (!company || !who || !sector){
+      toast('Frank needs at least the company, the entrepreneur and the sector', 'bad');
+      const firstEmpty = $('#bp-' + (!company ? 'co' : !who ? 'who' : 'sector'));
+      if (firstEmpty && firstEmpty.focus) firstEmpty.focus();
+      return;
+    }
+
+    const lines = [
+      ['Company', company + (get('bp-reg') ? ' (ח.פ. ' + get('bp-reg') + ')' : '')],
+      ['Entrepreneur', who],
+      ['Sector', sector],
+      ['Track', TRACKS[get('bp-track')] || TRACKS.general],
+      ['Industrial zone', get('bp-zone')],
+      ['Plot', get('bp-plot')],
+      ['Area', get('bp-area') ? get('bp-area') + ' m²' : ''],
+      ['Total investment', get('bp-inv') ? '₪' + get('bp-inv') : ''],
+      ['Grant sought', get('bp-grant') ? '₪' + get('bp-grant') : ''],
+      ['Staff today', get('bp-staff')],
+      ['Revenue last year', get('bp-rev') ? '₪' + get('bp-rev') : ''],
+      ['Products and services', get('bp-products')],
+      ['Notes', get('bp-notes')]
+    ].filter(([, v]) => v).map(([k, v]) => '- ' + k + ': ' + v).join('\n');
+
+    const hebrew = App.bpLang === 'he';
+
+    const system =
+      'You are Frank, preparing a business plan for submission to the Israeli Investment Authority ' +
+      '(רשות ההשקעות). Follow the standard thirteen-section format exactly, in this order: ' +
+      '1 הצהרה, 2 תוכן עניינים, 3 מטרת התוכנית, 4 חזון היזם, 5 תקציר מנהלים, 6 הענף, 7 שטחים ומבנים, ' +
+      '8 תפעול וייצור, 9 מבנה ארגוני, 10 תוכנית שיווק ומכירות, 11 ניתוח SWOT, 12 הנחות יסוד, ' +
+      '13 התוכנית הפיננסית. ' +
+      'The financial section must contain real markdown tables: a five-year P&L showing הכנסות, עלות המכר, ' +
+      'רווח גולמי, הוצאות תפעוליות itemised, רווח תפעולי, EBITDA, הוצאות מימון, מס חברות and רווח נקי; ' +
+      'a five-year cash flow; an itemised investment schedule; and NPV discounted at 6.5%. ' +
+      'Use these assumptions unless the brief says otherwise: gross margin 18–25% for manufacturing and ' +
+      'trade, employer burden 25% on gross salary, corporate tax 23%, VAT 17%, finance cost 6.5%. ' +
+      'Typical gross salaries: מנכ"ל ₪30,000–35,000, מנהלת אדמיניסטרציה ₪11,000–13,000, מחסנאי/פועל ₪7,000–9,000. ' +
+      'Give the ענף section the correct הל"מ"ס classification. Every figure must be concrete and internally ' +
+      'consistent — no placeholders, no ranges where a number is expected. ' +
+      (hebrew ? 'Write the entire plan in Hebrew. ' : 'Write the plan in English, keeping the Hebrew section names. ') +
+      'Output markdown only: # for the plan title, ## for each of the thirteen sections. No preamble.';
+
+    working(true);
+    toast('Frank is writing the plan — around a minute');
+
+    try {
+      const md = await Api.send({
+        max: 8000, feature: 'plan', system,
+        messages: [{ role:'user', content:'Write the full business plan.\n\n' + lines }]
+      });
+      Doc.show({
+        title: company + ' — תוכנית עסקית',
+        html: render(md),
+        dir: hebrew ? 'rtl' : 'ltr',
+        kind: 'Business plan'
+      });
+      toast('Plan ready');
+      Account.log('plan', { track: val('bp-track'), lang: App.bpLang });
+    } catch (err){
+      toast(err.message, 'bad');
+      if (err.authFailed) Keys.open();
+    } finally { working(false); }
+  }
+};
+
+/* ── 14. FRANK ──────────────────────────────────────────── */
+
+const OPENERS = [
+  'What clauses should I never give up in an Israeli SAFE?',
+  'Draft a demand letter for unpaid invoices',
+  'What does a landlord owe a tenant under Israeli law?',
+  'Explain drag-along to a first-time founder'
+];
+
+const Drawer = {
+  thinking: false,
+
+  open(){
+    $('#drawer').setAttribute('data-on','');
+    $('#scrim').setAttribute('data-on','');
+    if (!App.thread.length) this.greet();
+    setTimeout(() => { const a = $('#ask'); if (a && a.focus) a.focus(); }, 300);
+  },
+
+  close(){
+    $('#drawer').removeAttribute('data-on');
+    $('#scrim').removeAttribute('data-on');
+  },
+
+  toggle(){
+    if ($('#drawer').hasAttribute('data-on')) this.close(); else this.open();
+  },
+
+  greet(){
+    const host = $('#thread');
+    host.innerHTML =
+      '<div class="turn" data-by="frank"><div class="bubble">' +
+        '<p>Frank here. I draft, I read what comes in, and I keep track of what is owed to whom.</p>' +
+        '<p>Ask me anything, or give me a document to look at.</p>' +
+      '</div></div>' +
+      '<div class="suggests">' + OPENERS.map(t => '<button class="suggest">' + esc(t) + '</button>').join('') + '</div>';
+
+    $$('.suggest', host).forEach(b => b.addEventListener('click', () => this.ask(b.textContent)));
+
+    if (!App.hasKey()){
+      const n = document.createElement('div');
+      n.className = 'notice';
+      n.innerHTML = Account.enabled
+        ? '<b>Frank is not connected yet</b>Choose a plan that includes drafting, or add your own Anthropic key.' +
+          '<button class="btn btn-green" data-act="keys">Open your account</button>'
+        : '<b>Frank needs a key first</b>Everything here runs on an Anthropic key you hold. ' +
+          'It stays in this browser.<button class="btn btn-green" data-act="keys">Set the key</button>';
+      host.appendChild(n);
+    }
+  },
+
+  paint(){
+    const host = $('#thread');
+    const atBottom = host.scrollHeight - host.scrollTop - host.clientHeight < 90;
+
+    host.innerHTML = App.thread.map(t =>
+      '<div class="turn" data-by="' + t.by + '">' +
+        '<div class="bubble">' + (t.by === 'me' ? esc(t.text) : render(t.text)) + '</div>' +
+        '<span class="turn-when">' + esc(t.at) + '</span>' +
+      '</div>'
+    ).join('');
+
+    if (this.thinking){
+      host.insertAdjacentHTML('beforeend',
+        '<div class="turn" data-by="frank"><div class="bubble"><div class="dots"><i></i><i></i><i></i></div></div></div>');
+    }
+    if (atBottom || this.thinking) host.scrollTop = host.scrollHeight;
+  },
+
+  push(by, text){
+    App.thread.push({ by, text, at: new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) });
+    App.saveThread();
+    this.paint();
+  },
+
+  async ask(text){
+    const message = String(text || '').trim();
+    if (!message || this.thinking) return;
+
+    if (!App.hasKey()){ Keys.open(); return; }
+
+    this.push('me', message);
+    this.thinking = true;
+    $('#frank-state').textContent = 'Thinking…';
+    $('#send').disabled = true;
+    this.paint();
+
+    /* Context Frank should know about, kept short. */
+    let context = '';
+    if (App.doc.html) context += '\n\nOpen on screen: ' + App.doc.title + ' (' + App.doc.kind + ').';
+    if (App.matters.length){
+      context += '\n\nOpen matters: ' + App.matters.slice(0,5)
+        .map(m => m.title + ' for ' + m.client).join('; ') + '.';
+    }
+    if (App.clients.length){
+      context += '\n\nClients on file: ' + App.clients.slice(0,5).map(c => c.name).join(', ') + '.';
+    }
+
+    const system =
+      'You are Frank, senior paralegal at PRA Legal in Tel Aviv, twenty years in Israeli commercial practice. ' +
+      'You are talking to a licensed attorney, so skip the disclaimers and the hedging — give the answer. ' +
+      'Be specific: name statutes with their Hebrew name and year, cite clause numbers, give the market position. ' +
+      'Draft complete text when asked to draft; never leave bracketed placeholders. ' +
+      'Reply in Hebrew whenever the attorney writes in Hebrew. Keep answers tight unless asked to expand.' +
+      context;
+
+    try {
+      const history = App.thread.slice(-10).map(t => ({
+        role: t.by === 'me' ? 'user' : 'assistant',
+        content: t.text
+      }));
+      const reply = await Api.send({ max: 1800, feature: 'frank', system, messages: history });
+      Account.log('frank');
+      this.thinking = false;
+      this.push('frank', reply);
+    } catch (err){
+      this.thinking = false;
+      App.thread.push({ by:'frank', text:'**' + err.message + '**', at:new Date().toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' }) });
+      App.saveThread();
+      this.paint();
+      if (err.authFailed) Keys.open();
+    } finally {
+      $('#frank-state').textContent = 'Paralegal · ready';
+      $('#send').disabled = !$('#ask').value.trim();
+    }
+  },
+
+  clear(){
+    App.thread = [];
+    App.saveThread();
+    this.greet();
+    toast('Conversation cleared');
+  }
+};
+
+/* ── 15. KEYS ───────────────────────────────────────────── */
+
+const Keys = {
+  open(){
+    $('#keys-scrim').setAttribute('data-on','');
+    $('#key-anthropic').value = Store.read(KEYS.anthropic, '') || '';
+    $('#key-eleven').value    = Store.read(KEYS.eleven, '') || '';
+    $('#key-voice').value     = Store.read(KEYS.voice, '') || '';
+    this.sync();
+    Account.paint();
+    if (Account.enabled && Account.session) Account.refresh().then(() => Account.paint());
+    setTimeout(() => { const k = $('#key-anthropic'); if (!App.hasKey() && k && k.focus) k.focus(); }, 60);
+  },
+
+  close(){ $('#keys-scrim').removeAttribute('data-on'); },
+
+  sync(){
+    const a = $('#state-anthropic');
+    if (a){
+      const on = App.hasKey();
+      a.textContent = on ? 'Set' : 'Not set';
+      a.dataset.state = on ? 'on' : 'off';
+    }
+    const e = $('#state-eleven');
+    if (e){
+      const on = (Store.read(KEYS.eleven, '') || '').length > 10;
+      e.textContent = on ? 'Set' : 'Optional';
+      e.dataset.state = on ? 'on' : 'opt';
+    }
+  },
+
+  save(){
+    const key = val('key-anthropic');
+    if (key && key.length < 20){ toast('That key looks too short to be real', 'bad'); return; }
+    if (key) Store.write(KEYS.anthropic, key); else Store.drop(KEYS.anthropic);
+
+    const el = val('key-eleven');
+    const vo = val('key-voice');
+    if (el) Store.write(KEYS.eleven, el); else Store.drop(KEYS.eleven);
+    if (vo) Store.write(KEYS.voice, vo); else Store.drop(KEYS.voice);
+
+    this.sync();
+    this.close();
+    toast(key ? 'Saved' : 'Key removed');
+  },
+
+  async test(){
+    const key = val('key-anthropic');
+    if (!key){ toast('Put a key in first', 'bad'); return; }
+
+    const btn = $('#btn-test');
+    const label = btn.textContent;
+    btn.textContent = 'Checking…';
+    btn.disabled = true;
+
+    try {
+      const res = await fetch(API_URL, {
+        method:'POST',
+        headers:{
+          'content-type':'application/json',
+          'x-api-key': key,
+          'anthropic-version':'2023-06-01',
+          'anthropic-dangerous-direct-browser-access':'true'
+        },
+        body: JSON.stringify({ model: MODEL_FAST, max_tokens: 8, messages:[{ role:'user', content:'hi' }] })
+      });
+      const data = await res.json();
+      if (data.error) toast(data.error.message, 'bad');
+      else {
+        Store.write(KEYS.anthropic, key);
+        this.sync();
+        toast('Key works — saved');
+      }
+    } catch (err){
+      toast('Could not reach Anthropic: ' + err.message, 'bad');
+    } finally {
+      btn.textContent = label;
+      btn.disabled = false;
+    }
+  },
+
+  wipe(){
+    if (!confirm('Erase every key, matter, client and conversation stored in this browser?')) return;
+    Object.values(KEYS).forEach(k => Store.drop(k));
+    App.matters = []; App.clients = []; App.thread = [];
+    Counts.sync(); Matters.paint(); Clients.paint(); Drawer.greet();
+    this.sync(); this.close();
+    toast('Everything erased');
+  }
+};
+
+/* ── 16. BOOT ───────────────────────────────────────────── */
+
+const ACTIONS = {
+  enter:        () => Router.enterApp(),
+  leave:        () => Account.leave(),
+  'to-landing':       () => Router.toLanding(),
+  'read-file':        () => Read.fileIt(),
+  'buy-practitioner': () => Account.buy('practitioner'),
+  'buy-firm':         () => Account.buy('firm'),
+  'billing-portal':   () => Account.billing('portal'),
+  palette:      () => Palette.open(),
+  frank:        () => Drawer.toggle(),
+  'frank-close':() => Drawer.close(),
+  'frank-clear':() => Drawer.clear(),
+  keys:         () => Keys.open(),
+  'keys-close': () => Keys.close(),
+  'keys-save':  () => Keys.save(),
+  'keys-test':  () => Keys.test(),
+  wipe:         () => Keys.wipe(),
+  'draft-run':  () => Draft.run(),
+  'plan-run':   () => Plan.run(),
+  'doc-back':   () => Router.to(App.doc.kind === 'Business plan' ? 'plan' : 'draft'),
+  'doc-edit':   () => Doc.toggleEdit(),
+  'doc-word':   () => Doc.word(),
+  'doc-pdf':    () => Doc.pdf(),
+  'doc-copy':   () => Doc.copy(),
+  'doc-file':   () => Doc.toMatter(),
+  'doc-review': () => Doc.review(),
+  'matter-new': () => $('#matter-input').click(),
+  'matter-ics': () => Matters.exportAll(),
+  'client-new': () => $('#client-input').click()
+};
+
+function wire(){
+  /* One delegated listener for every [data-act] in the document. */
+  document.addEventListener('click', e => {
+    const el = e.target.closest('[data-act]');
+    if (!el) return;
+    const fn = ACTIONS[el.dataset.act];
+    if (fn){ e.preventDefault(); fn(); }
+  });
+
+  /* Rail navigation */
+  $$('.rail-btn[data-view]').forEach(b =>
+    b.addEventListener('click', () => Router.to(b.dataset.view)));
+
+  /* Landing chrome */
+  const mast = $('#masthead');
+  const land = $('#s-land');
+  if (land && mast){
+    land.addEventListener('scroll', () => mast.toggleAttribute('data-stuck', land.scrollTop > 40), { passive:true });
+  }
+  $$('#s-land a[href^="#"]').forEach(a => a.addEventListener('click', e => {
+    const target = $(a.getAttribute('href'));
+    if (target && target.scrollIntoView){ e.preventDefault(); target.scrollIntoView({ behavior:'smooth', block:'start' }); }
+  }));
+
+  /* Scrim closes the drawer */
+  $('#scrim').addEventListener('click', () => Drawer.close());
+
+  /* Palette */
+  $('#palette-scrim').addEventListener('click', e => { if (e.target.id === 'palette-scrim') Palette.close(); });
+  $('#palette-input').addEventListener('input', e => Palette.filter(e.target.value));
+  $('#palette-input').addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown'){ e.preventDefault(); Palette.move(1); }
+    else if (e.key === 'ArrowUp'){ e.preventDefault(); Palette.move(-1); }
+    else if (e.key === 'Enter'){ e.preventDefault(); Palette.run(); }
+    else if (e.key === 'Escape'){ Palette.close(); }
+  });
+
+  /* Keys modal */
+  $('#keys-scrim').addEventListener('click', e => { if (e.target.id === 'keys-scrim') Keys.close(); });
+  $('#key-anthropic').addEventListener('keydown', e => { if (e.key === 'Enter') Keys.save(); });
+
+  /* Composer */
+  const ask = $('#ask');
+  const send = $('#send');
+  ask.addEventListener('input', () => {
+    ask.style.height = 'auto';
+    ask.style.height = Math.min(ask.scrollHeight, 132) + 'px';
+    send.disabled = !ask.value.trim();
+  });
+  ask.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      const v = ask.value.trim();
+      if (!v) return;
+      ask.value = ''; ask.style.height = ''; send.disabled = true;
+      Drawer.ask(v);
+    }
+  });
+  send.addEventListener('click', () => {
+    const v = ask.value.trim();
+    if (!v) return;
+    ask.value = ''; ask.style.height = ''; send.disabled = true;
+    Drawer.ask(v);
+  });
+
+  /* Business plan language */
+  $$('#bp-lang .chip').forEach(c => c.addEventListener('click', () => {
+    App.bpLang = c.dataset.val;
+    $$('#bp-lang .chip').forEach(x => x.toggleAttribute('data-on', x === c));
+  }));
+
+  /* File inputs */
+  const readDrop = $('#read-drop');
+  const readIn   = $('#read-input');
+  readDrop.addEventListener('click', () => readIn.click());
+  readIn.addEventListener('change', e => { Read.handle(e.target.files[0]); e.target.value = ''; });
+
+  ['dragover','dragleave','drop'].forEach(type => {
+    readDrop.addEventListener(type, e => {
+      e.preventDefault();
+      readDrop.toggleAttribute('data-over', type === 'dragover');
+      if (type === 'drop' && e.dataTransfer.files.length) Read.handle(e.dataTransfer.files[0]);
+    });
+  });
+
+  $('#matter-input').addEventListener('change', e => { Matters.fromFile(e.target.files[0]); e.target.value = ''; });
+  $('#client-input').addEventListener('change', e => { Clients.learn(e.target.files); e.target.value = ''; });
+
+  /* Keyboard */
+  document.addEventListener('keydown', e => {
+    const mod = e.metaKey || e.ctrlKey;
+    const inApp = $('#s-app').hasAttribute('data-on');
+
+    if (mod && e.key.toLowerCase() === 'k'){
+      e.preventDefault();
+      if (!inApp) Router.enterApp();
+      Palette.open();
+      return;
+    }
+    if (mod && e.key.toLowerCase() === 'j' && inApp){ e.preventDefault(); Drawer.toggle(); return; }
+
+    if (mod && inApp && /^[1-5]$/.test(e.key)){
+      e.preventDefault();
+      Router.to(['draft','read','matters','clients','plan'][Number(e.key) - 1]);
+      return;
+    }
+
+    if (e.key === 'Escape'){
+      if ($('#palette-scrim').hasAttribute('data-on')) Palette.close();
+      else if ($('#keys-scrim').hasAttribute('data-on')) Keys.close();
+      else if ($('#drawer').hasAttribute('data-on')) Drawer.close();
+    }
+  });
+}
+
+async function boot(){
+  App.load();
+  Counts.sync();
+  Stage.build();
+  Draft.mount();
+  wire();
+  Account.wire();
+
+  try { await Account.init(); }
+  catch { Account.enabled = false; }
+
+  const q = new URLSearchParams(location.search);
+  const billing = q.get('billing');
+  if (billing){
+    history.replaceState(null, '', location.pathname);
+    if (billing === 'success'){
+      toast('Subscription started. It can take a few seconds to show.');
+      setTimeout(() => Account.refresh().then(() => Account.paint()), 4000);
+    } else {
+      toast('Checkout cancelled — nothing was charged');
+    }
+    Router.enterApp();
+    return;
+  }
+
+  if ($('#s-auth').hasAttribute('data-on')) return;
+
+  /* Signed-in users go straight to their workspace. */
+  if (Account.enabled){ if (Account.session) Router.enterApp(); }
+  else if (App.hasKey() && (App.matters.length || App.clients.length)) Router.enterApp();
+}
+
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+else boot();
+</script>
+</body>
+</html>

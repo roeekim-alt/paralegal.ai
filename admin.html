@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Back office — PRA Legal</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%2314120F'/><path d='M32 14v36M20 22h24M24 50h16' stroke='%23C9A25B' stroke-width='3.4' stroke-linecap='round'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,300&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ink:#14120F; --ink-3:#302B25; --foolscap:#F6F3EC; --paper:#FFFDF8;
+  --ledger:#1C3B30; --ledger-lt:#2E5A4A; --brass:#A8813F; --brass-lt:#C9A25B;
+  --graphite:#57524B; --rule:#D6D0C4; --rule-dk:#35302A; --alarm:#9B3A2E;
+  --text:var(--ink); --text-2:var(--graphite); --text-3:#8A837A; --line:var(--rule);
+  --serif:'Newsreader','Iowan Old Style',Georgia,serif;
+  --sans:'Inter Tight',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --r-sm:6px; --r-md:10px; --r-lg:16px;
+  --lift:0 1px 2px rgba(20,18,15,.05),0 12px 32px -12px rgba(20,18,15,.18);
+  --drop:0 24px 70px -20px rgba(20,18,15,.4);
+  --ease:cubic-bezier(.22,.61,.36,1);
+}
+*,*::before,*::after{box-sizing:border-box} *{margin:0;padding:0}
+body{font-family:var(--sans);font-size:14.5px;line-height:1.55;color:var(--text);background:var(--foolscap);-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--ledger);outline-offset:2px;border-radius:3px}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms !important;animation-duration:.01ms !important}}
+
+/* ── Gate ── */
+.gate{min-height:100vh;display:grid;place-items:center;padding:24px;background:var(--ink)}
+.gate-card{width:min(380px,100%);background:var(--paper);border-radius:var(--r-lg);padding:32px 28px;box-shadow:var(--drop)}
+.gate-mark{font-family:var(--serif);font-size:22px;letter-spacing:-.015em;margin-bottom:2px}
+.gate-sub{font-size:13px;color:var(--text-3);margin-bottom:24px}
+.gate h2{font-family:var(--serif);font-weight:400;font-size:24px;letter-spacing:-.02em;margin-bottom:6px}
+.gate p{font-size:13.5px;color:var(--text-2);line-height:1.6;margin-bottom:18px}
+
+/* ── Controls ── */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:500;color:var(--text-2);margin-bottom:5px}
+.inp{width:100%;padding:10px 12px;background:var(--paper);border:1px solid var(--line);border-radius:var(--r-md);font-size:14px;transition:border-color .15s,box-shadow .15s;appearance:none}
+.inp:focus{outline:0;border-color:var(--ledger);box-shadow:0 0 0 3px rgba(28,59,48,.11)}
+select.inp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%238A837A' stroke-width='1.6' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 18px;border-radius:99px;font-size:13px;font-weight:600;transition:background .15s,color .15s,border-color .15s;white-space:nowrap;text-decoration:none}
+.btn:disabled{opacity:.5;cursor:default}
+.btn-green{background:var(--ledger);color:var(--foolscap)} .btn-green:hover:not(:disabled){background:var(--ledger-lt)}
+.btn-line{border:1px solid var(--line);color:var(--text)} .btn-line:hover:not(:disabled){border-color:var(--text-3)}
+.btn-alarm{border:1px solid rgba(155,58,46,.35);color:var(--alarm)} .btn-alarm:hover:not(:disabled){background:rgba(155,58,46,.06)}
+.btn-wide{width:100%;padding:12px}
+.msg{font-size:13px;line-height:1.55;padding:9px 12px;border-radius:var(--r-md);margin-bottom:12px;background:rgba(155,58,46,.07);color:var(--alarm);border:1px solid rgba(155,58,46,.2)}
+
+/* ── Console layout ── */
+.console{display:grid;grid-template-columns:232px minmax(0,1fr);min-height:100vh}
+.side{background:var(--ink);color:var(--foolscap);display:flex;flex-direction:column;padding:22px 14px;position:sticky;top:0;height:100vh}
+.side-mark{padding:0 10px 22px}
+.side-mark b{display:block;font-family:var(--serif);font-weight:400;font-size:21px;letter-spacing:-.015em}
+.side-mark span{font-size:12px;color:rgba(246,243,236,.45)}
+.nav{display:grid;gap:2px}
+.nav button{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;text-align:left;font-size:13.5px;color:rgba(246,243,236,.58);transition:background .15s,color .15s;position:relative}
+.nav button:hover{color:var(--foolscap);background:rgba(246,243,236,.06)}
+.nav button[data-on]{color:var(--foolscap);background:rgba(246,243,236,.11)}
+.nav button[data-on]::before{content:'';position:absolute;left:-14px;top:50%;transform:translateY(-50%);width:2px;height:16px;background:var(--brass-lt);border-radius:2px}
+.nav svg{width:16px;height:16px;flex:none}
+.side-foot{margin-top:auto;padding:14px 10px 0;border-top:1px solid var(--rule-dk);display:grid;gap:10px}
+.side-foot .who{font-size:12px;color:rgba(246,243,236,.5);word-break:break-all}
+.side-foot a,.side-foot button{font-size:13px;color:rgba(246,243,236,.72);text-align:left;text-decoration:none}
+.side-foot a:hover,.side-foot button:hover{color:var(--foolscap)}
+
+.main{min-width:0;padding:28px clamp(18px,4vw,48px) 80px}
+.head{display:flex;align-items:flex-end;gap:14px;margin-bottom:28px;flex-wrap:wrap}
+.head h1{font-family:var(--serif);font-weight:400;font-size:32px;letter-spacing:-.024em;line-height:1.1}
+.head p{font-size:13px;color:var(--text-3);margin-top:3px}
+.head-fill{margin-left:auto;display:flex;gap:8px;align-items:center}
+.stamp{font-size:12px;color:var(--text-3)}
+
+/* ── Overview ── */
+.ledger{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border-top:1.5px solid var(--ink);border-bottom:1px solid var(--line);margin-bottom:36px}
+.fig{padding:18px 18px 20px 0}
+.fig + .fig{padding-left:18px;border-left:1px solid var(--line)}
+.fig-v{font-family:var(--serif);font-weight:400;font-size:34px;line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.fig-l{font-size:12.5px;color:var(--text-2);margin-top:8px}
+.fig-n{font-size:11.5px;color:var(--text-3);margin-top:2px}
+.fig-v[data-tone="bad"]{color:var(--alarm)}
+
+.pair{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:1060px){.pair{grid-template-columns:1fr}}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:20px 22px}
+.panel h3{font-size:14px;font-weight:600;margin-bottom:3px}
+.panel .sub{font-size:12.5px;color:var(--text-3);margin-bottom:16px}
+.chart{width:100%;height:190px;display:block}
+.chart rect.bar{fill:var(--ledger);transition:fill .12s}
+.chart rect.bar:hover{fill:var(--brass)}
+.chart text{font-family:var(--sans);font-size:10.5px;fill:var(--text-3)}
+.chart line{stroke:var(--line)}
+
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{font-size:12px;font-weight:600;color:var(--text-3);text-align:left;padding:0 12px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+th:first-child,td:first-child{padding-left:0}
+th:last-child,td:last-child{padding-right:0}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+
+/* ── Users ── */
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.bar .inp{max-width:300px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:6px 12px;border-radius:99px;border:1px solid var(--line);background:var(--paper);font-size:12.5px;color:var(--text-2)}
+.chip:hover{border-color:var(--text-3)}
+.chip[data-on]{background:var(--ink);border-color:var(--ink);color:var(--foolscap)}
+.chip i{font-style:normal;opacity:.6;margin-left:3px}
+.table-wrap{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:6px 20px;overflow-x:auto}
+.users tbody tr{cursor:pointer;transition:background .1s}
+.users tbody tr:hover{background:rgba(20,18,15,.025)}
+.who b{display:block;font-weight:600;font-size:13.5px}
+.who span{display:block;font-size:12px;color:var(--text-3)}
+.pill{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:99px;background:rgba(20,18,15,.05);color:var(--text-2);white-space:nowrap}
+.pill[data-tone="green"]{background:rgba(28,59,48,.1);color:var(--ledger)}
+.pill[data-tone="brass"]{background:rgba(168,129,63,.14);color:#6E5222}
+.pill[data-tone="red"]{background:rgba(155,58,46,.1);color:var(--alarm)}
+.use{display:flex;align-items:center;gap:8px;min-width:140px}
+.use .meter{flex:1;height:4px;border-radius:4px;background:rgba(20,18,15,.07);overflow:hidden}
+.use .meter i{display:block;height:100%;background:var(--ledger);border-radius:4px}
+.use .meter i[data-tone="red"]{background:var(--alarm)}
+.use span{font-size:12px;color:var(--text-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+/* ── Feed ── */
+.feed{background:var(--paper);border:1px solid var(--line);border-radius:var(--r-lg);padding:4px 20px}
+.row{display:grid;grid-template-columns:108px minmax(0,1fr) auto;gap:14px;padding:12px 0;border-bottom:1px solid var(--line);font-size:13.5px;align-items:baseline}
+.row:last-child{border-bottom:0}
+.row time{font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
+.row .what{min-width:0}
+.row .what b{font-weight:600}
+.row .what span{color:var(--text-2)}
+.row .tag{font-size:11.5px;color:var(--text-3)}
+.empty{padding:48px 0;text-align:center;color:var(--text-3);font-size:13.5px}
+
+/* ── Drawer ── */
+.scrim{position:fixed;inset:0;background:rgba(20,18,15,0);pointer-events:none;transition:background .3s var(--ease);z-index:40}
+.scrim[data-on]{background:rgba(20,18,15,.4);pointer-events:auto}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,96vw);background:var(--paper);border-left:1px solid var(--line);box-shadow:var(--drop);transform:translateX(102%);transition:transform .32s var(--ease);z-index:50;display:grid;grid-template-rows:auto minmax(0,1fr)}
+.drawer[data-on]{transform:none}
+.drawer-head{display:flex;gap:12px;align-items:flex-start;padding:20px 22px 16px;border-bottom:1px solid var(--line)}
+.drawer-head b{display:block;font-family:var(--serif);font-weight:400;font-size:21px;letter-spacing:-.015em;line-height:1.2}
+.drawer-head span{display:block;font-size:12.5px;color:var(--text-3);margin-top:2px;word-break:break-all}
+.x{width:32px;height:32px;border-radius:var(--r-sm);display:grid;place-items:center;color:var(--text-3);margin-left:auto;flex:none}
+.x:hover{background:rgba(20,18,15,.06);color:var(--text)}
+.drawer-body{overflow-y:auto;padding:18px 22px 40px}
+.facts{display:grid;grid-template-columns:auto 1fr;gap:7px 18px;font-size:13.5px;margin-bottom:22px}
+.facts dt{color:var(--text-3)}
+.facts dd{font-variant-numeric:tabular-nums}
+.act{padding:16px 0;border-top:1px solid var(--line)}
+.act h4{font-size:13px;font-weight:600;margin-bottom:3px}
+.act p{font-size:12.5px;color:var(--text-3);line-height:1.55;margin-bottom:10px}
+.act-row{display:flex;gap:8px}
+.act-row .inp{flex:1}
+
+.toasts{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:90;display:grid;gap:8px;justify-items:center;pointer-events:none}
+.toast{background:var(--ink);color:var(--foolscap);padding:10px 18px;border-radius:99px;font-size:13px;box-shadow:var(--drop);max-width:min(460px,92vw)}
+.toast[data-tone="bad"]{background:var(--alarm)}
+
+@media (max-width:780px){
+  .console{grid-template-columns:1fr}
+  .side{position:static;height:auto;padding:14px}
+  .side-mark{padding-bottom:12px}
+  .nav{grid-auto-flow:column;overflow-x:auto}
+  .side-foot{display:none}
+  .fig + .fig{border-left:0;padding-left:0}
+  .row{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Sign-in gate ─────────────────────────────────────────── -->
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="gate-mark">PRA Legal</div>
+    <div class="gate-sub">Back office</div>
+
+    <div id="gate-config" hidden>
+      <h2>Not connected yet</h2>
+      <p>This page needs the Supabase address and public key in <code>config.js</code>. The README walks through where to find both.</p>
+    </div>
+
+    <form id="gate-form" hidden novalidate>
+      <h2>Administrators only</h2>
+      <p>Sign in with the account you marked as an administrator.</p>
+      <div class="msg" id="gate-msg" hidden></div>
+      <div class="field"><label for="g-email">Email</label><input class="inp" id="g-email" type="email" autocomplete="email"></div>
+      <div class="field"><label for="g-pass">Password</label><input class="inp" id="g-pass" type="password" autocomplete="current-password"></div>
+      <button class="btn btn-green btn-wide" id="g-submit" type="submit">Sign in</button>
+    </form>
+
+    <div id="gate-denied" hidden>
+      <h2>Not an administrator</h2>
+      <p id="gate-denied-who">This account cannot open the back office.</p>
+      <button class="btn btn-line btn-wide" data-do="signout">Sign in as someone else</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Console ──────────────────────────────────────────────── -->
+<div class="console" id="console" hidden>
+  <aside class="side">
+    <div class="side-mark"><b>PRA Legal</b><span>Back office</span></div>
+    <nav class="nav">
+      <button data-page="overview" data-on>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-4 4"/></svg>Overview
+      </button>
+      <button data-page="users">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/></svg>Users
+      </button>
+      <button data-page="activity">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>Activity
+      </button>
+      <button data-page="audit">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Admin changes
+      </button>
+    </nav>
+    <div class="side-foot">
+      <div class="who" id="me"></div>
+      <a href="./">Open the workspace</a>
+      <button data-do="signout">Sign out</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <!-- Overview -->
+    <section data-view="overview">
+      <div class="head">
+        <div><h1>Overview</h1><p id="ov-month"></p></div>
+        <div class="head-fill"><span class="stamp" id="stamp"></span><button class="btn btn-line" data-do="reload">Refresh</button></div>
+      </div>
+      <div class="ledger" id="ledger"></div>
+      <div class="pair">
+        <div class="panel">
+          <h3>Model tokens per day</h3>
+          <div class="sub">Last 30 days, hosted plans only. Hover a bar for the day's cost.</div>
+          <svg class="chart" id="chart" viewBox="0 0 600 190" preserveAspectRatio="none" role="img" aria-label="Tokens per day"></svg>
+        </div>
+        <div class="panel">
+          <h3>Plans</h3>
+          <div class="sub">Accounts on each plan and what it includes.</div>
+          <table><thead><tr><th>Plan</th><th class="num">Accounts</th><th class="num">Price</th><th class="num">Monthly tokens</th></tr></thead>
+          <tbody id="plans"></tbody></table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Users -->
+    <section data-view="users" hidden>
+      <div class="head">
+        <div><h1>Users</h1><p id="users-count"></p></div>
+        <div class="head-fill"><button class="btn btn-line" data-do="csv">Export CSV</button></div>
+      </div>
+      <div class="bar">
+        <input class="inp" id="q" type="search" placeholder="Search name, email or firm" autocomplete="off">
+        <div class="chips" id="filters"></div>
+      </div>
+      <div class="table-wrap">
+        <table class="users">
+          <thead><tr><th>Account</th><th>Plan</th><th>This month</th><th class="num">Model cost</th><th>Last seen</th><th>Joined</th></tr></thead>
+          <tbody id="users"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Activity -->
+    <section data-view="activity" hidden>
+      <div class="head">
+        <div><h1>Activity</h1><p>The last 150 things people did in the workspace. Client content is never recorded — only the kind of action.</p></div>
+        <div class="head-fill"><button class="btn btn-line" data-do="reload">Refresh</button></div>
+      </div>
+      <div class="feed" id="activity"></div>
+    </section>
+
+    <!-- Audit -->
+    <section data-view="audit" hidden>
+      <div class="head">
+        <div><h1>Admin changes</h1><p>Every plan change, suspension and grant made from this back office, and by whom.</p></div>
+      </div>
+      <div class="feed" id="audit"></div>
+    </section>
+  </main>
+</div>
+
+<!-- ── User drawer ──────────────────────────────────────────── -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer" aria-label="Account detail">
+  <div class="drawer-head">
+    <div style="min-width:0"><b id="d-name"></b><span id="d-email"></span></div>
+    <button class="x" data-do="close" aria-label="Close"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="drawer-body">
+    <dl class="facts" id="d-facts"></dl>
+
+    <div class="act">
+      <h4>Plan</h4>
+      <p>Moving someone onto a paid plan here gives them access without charging them. It does not create, change or cancel anything in Stripe.</p>
+      <div class="act-row">
+        <select class="inp" id="d-plan"></select>
+        <button class="btn btn-green" data-do="set-plan">Apply</button>
+      </div>
+    </div>
+
+    <div class="act">
+      <h4>Extra tokens every month</h4>
+      <p>Added on top of the plan's allowance until you set it back to zero.</p>
+      <div class="act-row">
+        <input class="inp" id="d-bonus" type="number" min="0" step="100000" inputmode="numeric">
+        <button class="btn btn-green" data-do="set-bonus">Save</button>
+      </div>
+    </div>
+
+    <div class="act">
+      <h4 id="d-suspend-title">Suspend</h4>
+      <p id="d-suspend-note">Blocks hosted drafting immediately. Their data in their own browser is untouched.</p>
+      <button class="btn btn-alarm" data-do="suspend" id="d-suspend">Suspend this account</button>
+    </div>
+
+    <div class="act">
+      <h4>Back office access</h4>
+      <p id="d-admin-note"></p>
+      <button class="btn btn-line" data-do="admin" id="d-admin"></button>
+    </div>
+
+    <div class="act">
+      <h4>Recent activity</h4>
+      <div id="d-events" style="margin-top:6px"></div>
+    </div>
+  </div>
+</aside>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+'use strict';
+
+/* ═══════════════════════════════════════════════════════════
+   BACK OFFICE
+   Every figure comes from a database function that refuses to run
+   unless the signed-in user has is_admin = true. Hiding this page
+   is not the security — the database is.
+   ═══════════════════════════════════════════════════════════ */
+
+const CFG = window.PRA_CONFIG || {};
+const USD_ILS = Number(CFG.usdToIls) || 3.7;
+const $  = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+
+const S = {
+  sb: null, me: null, page: 'overview',
+  plans: [], users: [], filter: 'all', open: null
+};
+
+/* ── formatting ── */
+const esc = v => String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const nf  = new Intl.NumberFormat('en-US');
+function tokens(n){
+  n = Number(n) || 0;
+  if (n >= 1e6) return (n/1e6).toFixed(n >= 1e7 ? 0 : 1).replace(/\.0$/,'') + 'M';
+  if (n >= 1e3) return Math.round(n/1e3) + 'k';
+  return String(n);
+}
+const ils = n => '₪' + nf.format(Math.round(Number(n) || 0));
+const usd = n => '$' + (Number(n) || 0).toFixed(2);
+function day(ts){ return ts ? new Date(ts).toLocaleDateString([], { day:'numeric', month:'short', year:'numeric' }) : '—'; }
+function ago(ts){
+  if (!ts) return 'never';
+  const s = (Date.now() - new Date(ts)) / 1000;
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s/60) + 'm ago';
+  if (s < 86400) return Math.floor(s/3600) + 'h ago';
+  if (s < 86400*30) return Math.floor(s/86400) + 'd ago';
+  return day(ts);
+}
+function stamp(ts){
+  const d = new Date(ts);
+  return d.toLocaleDateString([], { day:'numeric', month:'short' }) + ' ' + d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+}
+
+function toast(text, tone){
+  const el = document.createElement('div');
+  el.className = 'toast';
+  if (tone) el.dataset.tone = tone;
+  el.textContent = text;
+  $('#toasts').appendChild(el);
+  setTimeout(() => el.remove(), tone === 'bad' ? 5500 : 2800);
+}
+
+async function call(fn, args){
+  const { data, error } = await S.sb.rpc(fn, args || {});
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+/* ── gate ── */
+function gate(which){
+  $('#gate').hidden = false;
+  $('#console').hidden = true;
+  ['config','form','denied'].forEach(k => { $('#gate-' + k).hidden = k !== which; });
+  if (which === 'form') setTimeout(() => $('#g-email').focus(), 40);
+}
+
+async function signIn(e){
+  e.preventDefault();
+  const btn = $('#g-submit'), msg = $('#gate-msg');
+  msg.hidden = true;
+  btn.disabled = true; btn.textContent = 'One moment…';
+  const { error } = await S.sb.auth.signInWithPassword({
+    email: $('#g-email').value.trim().toLowerCase(),
+    password: $('#g-pass').value
+  });
+  btn.disabled = false; btn.textContent = 'Sign in';
+  if (error){ msg.textContent = 'That email and password do not match an account.'; msg.hidden = false; return; }
+  start();
+}
+
+async function signOut(){
+  await S.sb.auth.signOut().catch(() => {});
+  location.reload();
+}
+
+async function start(){
+  if (!CFG.supabaseUrl || !CFG.supabaseAnonKey || !window.supabase) return gate('config');
+  if (!S.sb) S.sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey);
+
+  const { data } = await S.sb.auth.getSession();
+  if (!data.session) return gate('form');
+
+  const isAdmin = await call('is_admin').catch(() => false);
+  if (!isAdmin){
+    $('#gate-denied-who').textContent = data.session.user.email + ' is not an administrator. The README explains how to grant access.';
+    return gate('denied');
+  }
+
+  S.me = data.session.user;
+  $('#me').textContent = S.me.email;
+  $('#gate').hidden = true;
+  $('#console').hidden = false;
+
+  const { data: plans } = await S.sb.from('plans').select('*').order('sort');
+  S.plans = plans || [];
+  $('#d-plan').innerHTML = S.plans.map(p => '<option value="' + esc(p.id) + '">' + esc(p.name) + (p.price_ils ? ' — ₪' + p.price_ils : '') + '</option>').join('');
+
+  go('overview');
+}
+
+/* ── navigation ── */
+function go(page){
+  S.page = page;
+  $$('.nav button').forEach(b => b.toggleAttribute('data-on', b.dataset.page === page));
+  $$('[data-view]').forEach(v => { v.hidden = v.dataset.view !== page; });
+  load();
+}
+
+async function load(){
+  try {
+    if (S.page === 'overview') await loadOverview();
+    if (S.page === 'users')    await loadUsers();
+    if (S.page === 'activity') await loadActivity();
+    if (S.page === 'audit')    await loadAudit();
+  } catch (err){ toast(err.message, 'bad'); }
+}
+
+/* ── overview ── */
+async function loadOverview(){
+  const [o, days] = await Promise.all([ call('admin_overview'), call('admin_daily', { days: 30 }) ]);
+  const now = new Date();
+  $('#ov-month').textContent = now.toLocaleDateString([], { month:'long', year:'numeric' }) + ' so far';
+  $('#stamp').textContent = 'Updated ' + now.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+
+  const costIls = Number(o.cost_month_usd) * USD_ILS;
+  const margin  = Number(o.mrr_ils) - costIls;
+  const figs = [
+    [ils(o.mrr_ils), 'Monthly revenue', o.paying + ' paying' + (o.comped ? ', ' + o.comped + ' on the house' : '')],
+    [nf.format(o.users), 'Accounts', o.new_30d + ' joined in 30 days'],
+    [nf.format(o.active_7d), 'Active this week', o.users ? Math.round(100 * o.active_7d / o.users) + '% of accounts' : ''],
+    [tokens(o.tokens_month), 'Tokens this month', nf.format(o.requests_month) + ' requests'],
+    [ils(costIls), 'Model cost this month', usd(o.cost_month_usd) + ' at ₪' + USD_ILS + ' to the dollar'],
+    [ils(margin), 'Gross margin', o.past_due ? o.past_due + ' payment' + (o.past_due === 1 ? '' : 's') + ' overdue' : (o.suspended ? o.suspended + ' suspended' : 'Revenue less model cost'), margin < 0 ? 'bad' : '']
+  ];
+  $('#ledger').innerHTML = figs.map(f =>
+    '<div class="fig"><div class="fig-v"' + (f[3] ? ' data-tone="' + f[3] + '"' : '') + '>' + esc(f[0]) + '</div>' +
+    '<div class="fig-l">' + esc(f[1]) + '</div><div class="fig-n">' + esc(f[2]) + '</div></div>'
+  ).join('');
+
+  drawChart(days || []);
+
+  const byPlan = o.by_plan || {};
+  $('#plans').innerHTML = S.plans.map(p =>
+    '<tr><td>' + esc(p.name) + '</td><td class="num">' + nf.format(byPlan[p.id] || 0) + '</td>' +
+    '<td class="num">' + (p.price_ils ? ils(p.price_ils) : 'Free') + '</td>' +
+    '<td class="num">' + (p.hosted ? tokens(p.monthly_tokens) : 'Own key') + '</td></tr>'
+  ).join('');
+}
+
+function drawChart(days){
+  const svg = $('#chart');
+  const W = 600, H = 190, pad = 22, base = H - pad;
+  const max = Math.max(1, ...days.map(d => Number(d.tokens)));
+  const bw = days.length ? (W / days.length) : W;
+  let out = '<line x1="0" x2="' + W + '" y1="' + base + '" y2="' + base + '"/>';
+  days.forEach((d, i) => {
+    const h = Math.max(Number(d.tokens) ? 2 : 0, (Number(d.tokens) / max) * (base - 8));
+    const x = i * bw + bw * 0.16;
+    out += '<rect class="bar" x="' + x.toFixed(1) + '" y="' + (base - h).toFixed(1) + '" width="' + (bw * 0.68).toFixed(1) + '" height="' + h.toFixed(1) + '" rx="1.5">' +
+           '<title>' + esc(day(d.day)) + ' — ' + tokens(d.tokens) + ' tokens, ' + usd(d.cost_usd) + ', ' + d.requests + ' requests</title></rect>';
+    if (i === 0 || i === days.length - 1 || i === Math.floor(days.length / 2)){
+      const lbl = new Date(d.day).toLocaleDateString([], { day:'numeric', month:'short' });
+      out += '<text x="' + (x + bw * 0.34).toFixed(1) + '" y="' + (H - 5) + '" text-anchor="middle">' + esc(lbl) + '</text>';
+    }
+  });
+  out += '<text x="0" y="11">' + esc(tokens(max)) + '</text>';
+  svg.innerHTML = out;
+}
+
+/* ── users ── */
+const FILTERS = [
+  ['all',       'Everyone',  () => true],
+  ['paying',    'Paying',    u => ['active','trialing'].includes(u.subscription_status) && u.plan !== 'own_key'],
+  ['comped',    'On the house', u => u.subscription_status === 'comped'],
+  ['overdue',   'Overdue',   u => u.subscription_status === 'past_due'],
+  ['own_key',   'Own key',   u => u.plan === 'own_key'],
+  ['suspended', 'Suspended', u => u.suspended],
+  ['admins',    'Admins',    u => u.is_admin]
+];
+
+let searchTimer = null;
+async function loadUsers(){
+  S.users = await call('admin_users', { q: $('#q').value.trim() || null }) || [];
+  paintUsers();
+}
+
+function statusPill(u){
+  if (u.suspended) return '<span class="pill" data-tone="red">Suspended</span>';
+  const map = {
+    active:   ['Paying', 'green'], trialing: ['Trial', 'green'], comped: ['On the house', 'brass'],
+    past_due: ['Overdue', 'red'],  canceled: ['Cancelled', ''],  none: ['', '']
+  };
+  const [label, tone] = map[u.subscription_status] || ['', ''];
+  return label ? ' <span class="pill"' + (tone ? ' data-tone="' + tone + '"' : '') + '>' + label + '</span>' : '';
+}
+
+function planName(id){ const p = S.plans.find(x => x.id === id); return p ? p.name : id; }
+
+function paintUsers(){
+  const counts = {};
+  FILTERS.forEach(([k,, test]) => { counts[k] = S.users.filter(test).length; });
+  $('#filters').innerHTML = FILTERS.map(([k, label]) =>
+    '<button class="chip" data-f="' + k + '"' + (S.filter === k ? ' data-on' : '') + '>' + label + '<i>' + counts[k] + '</i></button>'
+  ).join('');
+  $$('#filters .chip').forEach(c => c.addEventListener('click', () => { S.filter = c.dataset.f; paintUsers(); }));
+
+  const test = (FILTERS.find(f => f[0] === S.filter) || FILTERS[0])[2];
+  const rows = S.users.filter(test);
+  $('#users-count').textContent = rows.length + ' of ' + S.users.length + ' accounts';
+
+  if (!rows.length){ $('#users').innerHTML = '<tr><td colspan="6"><div class="empty">No accounts match.</div></td></tr>'; return; }
+
+  $('#users').innerHTML = rows.map(u => {
+    const cap = Number(u.allowance), used = Number(u.tokens_month);
+    const pct = cap ? Math.min(100, Math.round(100 * used / cap)) : 0;
+    const hosted = cap > 0;
+    return '<tr data-id="' + esc(u.id) + '">' +
+      '<td class="who"><b>' + esc(u.full_name || u.email) + (u.is_admin ? ' <span class="pill">Admin</span>' : '') + '</b>' +
+        '<span>' + esc(u.full_name ? u.email : '') + (u.firm ? (u.full_name ? ' — ' : '') + esc(u.firm) : '') + '</span></td>' +
+      '<td>' + esc(planName(u.plan)) + statusPill(u) + '</td>' +
+      '<td>' + (hosted
+        ? '<div class="use"><div class="meter"><i style="width:' + pct + '%"' + (pct >= 90 ? ' data-tone="red"' : '') + '></i></div><span>' + tokens(used) + ' / ' + tokens(cap) + '</span></div>'
+        : '<span style="font-size:12px;color:var(--text-3)">Own key</span>') + '</td>' +
+      '<td class="num">' + (Number(u.cost_month_usd) ? usd(u.cost_month_usd) : '—') + '</td>' +
+      '<td>' + esc(ago(u.last_seen_at)) + '</td>' +
+      '<td>' + esc(day(u.created_at)) + '</td>' +
+    '</tr>';
+  }).join('');
+
+  $$('#users tr[data-id]').forEach(tr => tr.addEventListener('click', () => openUser(tr.dataset.id)));
+}
+
+function exportCsv(){
+  if (!S.users.length){ toast('No accounts to export', 'bad'); return; }
+  const cols = ['email','full_name','firm','plan','subscription_status','suspended','is_admin','tokens_month','cost_month_usd','allowance','bonus_tokens','created_at','last_seen_at','current_period_end'];
+  const cell = v => { const s = v == null ? '' : String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
+  const csv = [cols.join(',')].concat(S.users.map(u => cols.map(k => cell(u[k])).join(','))).join('\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type:'text/csv' }));
+  a.download = 'pra-legal-accounts-' + new Date().toISOString().slice(0,10) + '.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  toast(S.users.length + ' accounts exported');
+}
+
+/* ── user drawer ── */
+async function openUser(id){
+  const u = S.users.find(x => x.id === id);
+  if (!u) return;
+  S.open = u;
+  const self = u.id === S.me.id;
+
+  $('#d-name').textContent  = u.full_name || u.email;
+  $('#d-email').textContent = [u.email, u.firm].filter(Boolean).join(' — ');
+
+  const facts = [
+    ['Plan', planName(u.plan)],
+    ['Billing', { active:'Paying through Stripe', trialing:'Trial through Stripe', comped:'On the house — granted here', past_due:'Payment overdue', canceled:'Subscription ended', none:'No subscription' }[u.subscription_status] || u.subscription_status],
+    ['Renews', u.current_period_end ? day(u.current_period_end) : '—'],
+    ['This month', Number(u.allowance) ? tokens(u.tokens_month) + ' of ' + tokens(u.allowance) + ' tokens' : 'Uses their own key'],
+    ['Model cost', Number(u.cost_month_usd) ? usd(u.cost_month_usd) + ' (' + ils(u.cost_month_usd * USD_ILS) + ')' : '—'],
+    ['Joined', day(u.created_at)],
+    ['Last seen', ago(u.last_seen_at)]
+  ];
+  $('#d-facts').innerHTML = facts.map(f => '<dt>' + esc(f[0]) + '</dt><dd>' + esc(f[1]) + '</dd>').join('');
+
+  $('#d-plan').value  = u.plan;
+  $('#d-bonus').value = Number(u.bonus_tokens) || 0;
+
+  $('#d-suspend-title').textContent = u.suspended ? 'Suspended' : 'Suspend';
+  $('#d-suspend-note').textContent = u.suspended
+    ? 'Hosted drafting is blocked for this account. Restoring it takes effect on their next request.'
+    : 'Blocks hosted drafting immediately. Their data in their own browser is untouched.';
+  const sBtn = $('#d-suspend');
+  sBtn.textContent = u.suspended ? 'Restore this account' : 'Suspend this account';
+  sBtn.className = u.suspended ? 'btn btn-green' : 'btn btn-alarm';
+  sBtn.disabled = self;
+
+  $('#d-admin-note').textContent = self
+    ? 'This is you. Another administrator has to remove your access.'
+    : (u.is_admin ? 'Can open this back office and change any account.' : 'Cannot open the back office.');
+  const aBtn = $('#d-admin');
+  aBtn.textContent = u.is_admin ? 'Remove back office access' : 'Give back office access';
+  aBtn.disabled = self;
+
+  $('#drawer').setAttribute('data-on', '');
+  $('#scrim').setAttribute('data-on', '');
+
+  $('#d-events').innerHTML = '<div style="font-size:12.5px;color:var(--text-3)">Loading…</div>';
+  try {
+    const ev = await call('admin_events', { lim: 12, for_user: u.id });
+    $('#d-events').innerHTML = (ev && ev.length)
+      ? ev.map(e => '<div style="display:flex;justify-content:space-between;gap:12px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)">' +
+          '<span>' + esc(describe(e)) + '</span><span style="color:var(--text-3);font-size:12px;white-space:nowrap">' + esc(ago(e.created_at)) + '</span></div>').join('')
+      : '<div style="font-size:12.5px;color:var(--text-3)">Nothing recorded yet.</div>';
+  } catch (err){ $('#d-events').textContent = err.message; }
+}
+
+function closeUser(){
+  $('#drawer').removeAttribute('data-on');
+  $('#scrim').removeAttribute('data-on');
+  S.open = null;
+}
+
+async function update(args, done){
+  if (!S.open) return;
+  try {
+    await call('admin_update_user', Object.assign({ target: S.open.id }, args));
+    toast(done);
+    const id = S.open.id;
+    await loadUsers();
+    openUser(id);
+  } catch (err){ toast(err.message, 'bad'); }
+}
+
+const ACTIONS = {
+  signout:  signOut,
+  reload:   load,
+  csv:      exportCsv,
+  close:    closeUser,
+  'set-plan': () => {
+    const plan = $('#d-plan').value;
+    if (plan === S.open.plan) { toast('Already on that plan'); return; }
+    if (['active','trialing'].includes(S.open.subscription_status) &&
+        !confirm('This account pays through Stripe. Changing the plan here will not change what Stripe charges them. Continue?')) return;
+    update({ new_plan: plan }, 'Plan changed to ' + planName(plan));
+  },
+  'set-bonus': () => {
+    const n = Math.max(0, Math.round(Number($('#d-bonus').value) || 0));
+    update({ new_bonus: n }, n ? tokens(n) + ' extra tokens a month' : 'Extra tokens removed');
+  },
+  suspend: () => {
+    const to = !S.open.suspended;
+    if (to && !confirm('Suspend ' + (S.open.full_name || S.open.email) + '? Hosted drafting stops immediately.')) return;
+    update({ new_suspended: to }, to ? 'Account suspended' : 'Account restored');
+  },
+  admin: () => {
+    const to = !S.open.is_admin;
+    if (to && !confirm('Give ' + S.open.email + ' full access to this back office?')) return;
+    update({ new_admin: to }, to ? 'Back office access given' : 'Back office access removed');
+  }
+};
+
+/* ── activity + audit ── */
+const KINDS = {
+  sign_in: 'signed in', draft: 'drafted an agreement', read: 'had a document read',
+  matter: 'opened a matter', client: 'taught Frank about a client', plan: 'wrote a business plan', frank: 'asked Frank a question'
+};
+function describe(e){
+  const d = e.detail || {};
+  let s = KINDS[e.kind] || e.kind;
+  if (e.kind === 'draft' && d.instrument) s = 'drafted a ' + d.instrument + ' agreement' + (d.lang === 'he' ? ' in Hebrew' : '');
+  if (e.kind === 'plan' && d.lang) s += d.lang === 'he' ? ' in Hebrew' : ' in English';
+  return s;
+}
+
+async function loadActivity(){
+  const ev = await call('admin_events', { lim: 150 }) || [];
+  $('#activity').innerHTML = ev.length
+    ? ev.map(e => '<div class="row"><time>' + esc(stamp(e.created_at)) + '</time>' +
+        '<div class="what"><b>' + esc(e.email) + '</b> <span>' + esc(describe(e)) + '</span></div>' +
+        '<span class="tag">' + esc(e.kind) + '</span></div>').join('')
+    : '<div class="empty">Nothing has happened yet.</div>';
+}
+
+async function loadAudit(){
+  const rows = await call('admin_audit', { lim: 150 }) || [];
+  const say = d => Object.entries(d || {}).map(([k, v]) => {
+    if (k === 'plan') return 'plan → ' + planName(v);
+    if (k === 'suspended') return v ? 'suspended' : 'restored';
+    if (k === 'bonus_tokens') return 'extra tokens → ' + tokens(v);
+    if (k === 'is_admin') return v ? 'made admin' : 'admin removed';
+    return k + ' → ' + v;
+  }).join(', ');
+  $('#audit').innerHTML = rows.length
+    ? rows.map(r => '<div class="row"><time>' + esc(stamp(r.created_at)) + '</time>' +
+        '<div class="what"><b>' + esc(r.admin_email || 'deleted admin') + '</b> <span>changed ' + esc(r.target_email || 'a deleted account') + ': ' + esc(say(r.detail)) + '</span></div>' +
+        '<span class="tag">' + esc(r.action) + '</span></div>').join('')
+    : '<div class="empty">No changes made yet.</div>';
+}
+
+/* ── wiring ── */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-do]');
+  if (el && ACTIONS[el.dataset.do]){ e.preventDefault(); ACTIONS[el.dataset.do](); }
+});
+$$('.nav button').forEach(b => b.addEventListener('click', () => go(b.dataset.page)));
+$('#gate-form').addEventListener('submit', signIn);
+$('#scrim').addEventListener('click', closeUser);
+$('#q').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(loadUsers, 250); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeUser(); });
+
+start().catch(err => { gate('form'); const m = $('#gate-msg'); m.textContent = err.message; m.hidden = false; });
+</script>
+</body>
+</html>
