@@ -6,6 +6,7 @@
 <title>PRA Legal — AI paralegal for Israeli practice</title>
 
 <meta name="description" content="Draft agreements, read contracts, run matters. An AI paralegal built for Israeli legal practice, in Hebrew and English.">
+<link rel="preload" as="image" href="./assets/split-brain-justice.png">
 <meta name="theme-color" content="#14120F">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -908,6 +909,34 @@ select.inp{
   padding: 10px 13px; border-radius: var(--r-md);
   background: rgba(168,129,63,.1); color: #6E5222;
 }
+
+/* Brain and justice hero: keep artwork clear and copy above the overlays. */
+#s-land { background: #070c10; }
+.hero { background: #070c10; isolation: isolate; align-content: center; padding-top: 120px; }
+.hero-inner { position: relative; z-index: 4; }
+.hero h1 { color: #fffaf1; font-size: clamp(52px, 6.5vw, 100px); max-width: 12ch; }
+.hero-eyebrow, .hero-say { color: #eee9df; }
+.hero-say { max-width: min(43ch, 44vw); min-height: 5.1em; }
+.stage { background: #070c10 url('./assets/split-brain-justice.png') no-repeat right center / auto 100%; }
+.stage-img { inset: 0; background-size: auto 100%; background-position: right center; background-repeat: no-repeat; }
+.stage-panel[data-live] .stage-img { animation: none; }
+.stage-veil { pointer-events: none; background: linear-gradient(90deg, #070c10 0%, rgba(7,12,16,.96) 30%, rgba(7,12,16,.65) 46%, transparent 65%); }
+.stage-grain { display: none; }
+.masthead { background: linear-gradient(#070c10, rgba(7,12,16,.8), transparent); }
+.wordmark i, .mast-link { color: #e2ddd4; }
+.hero .btn-ghost { background: #14212a; border-color: #a6b6be; color: #fff; }
+@media (max-width: 720px) {
+  .hero { padding-top: clamp(380px, 66vh, 560px); padding-bottom: 40px; min-height: 100svh; align-content: end; }
+  .stage, .stage-img { background-size: auto clamp(420px, 72vh, 610px); background-position: center top; }
+  .stage-veil { background: linear-gradient(180deg, rgba(7,12,16,.12) 0%, transparent 240px, #070c10 clamp(390px, 68vh, 575px)); }
+  .hero h1 { font-size: clamp(44px, 10vw, 68px); max-width: 100%; }
+  .hero-eyebrow { color: #fff4dd; flex-wrap: wrap; }
+  .hero-say { max-width: 100%; min-height: 5.1em; }
+  .hero-cta { gap: 12px; }
+  .hero-cta .btn { white-space: normal; text-align: center; }
+  .scrub { margin-top: 28px; }
+}
+
 </style>
 </head>
 <body>
@@ -1467,7 +1496,7 @@ select.inp{
 
 /* Drop your image URLs here — the hero cross-dissolves between them.
    Leave empty and the stage falls back to drawn gradients.          */
-const STAGE_IMAGES = [];
+const STAGE_IMAGES = ['./assets/split-brain-justice.png'];
 
 const MODEL      = 'claude-sonnet-4-20250514';
 const MODEL_FAST = 'claude-haiku-4-5';
