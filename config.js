@@ -18,6 +18,9 @@ window.PRA_CONFIG = {
   // The "anon" / "public" key — a long string starting "eyJ"
   supabaseAnonKey: "",
 
+  // Enable only after Google OAuth is configured in this Supabase project.
+  googleSignInEnabled: false,
+
   // Used only by the back office to show model cost in shekels
   usdToIls: 3.7
 };

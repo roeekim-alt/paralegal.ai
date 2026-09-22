@@ -1083,6 +1083,13 @@ select.inp{
       <form class="auth-form" id="auth-form" novalidate>
         <h2 id="auth-title">Sign in</h2>
         <p id="auth-sub">Welcome back.</p>
+        <div id="google-auth" data-for="signin signup" hidden>
+          <button class="btn btn-outline" type="button" id="auth-google" data-act="google-signin" style="width:100%;gap:12px">
+            <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M43.61 24.46c0-1.36-.12-2.66-.35-3.92H24v7.42h11a9.4 9.4 0 0 1-4.08 6.17v5h6.61c3.87-3.57 6.08-8.83 6.08-14.67Z"/><path fill="#34A853" d="M24 44c5.52 0 10.15-1.83 13.53-4.95l-6.61-5c-1.83 1.23-4.18 1.98-6.92 1.98-5.31 0-9.81-3.59-11.42-8.43H5.75v5.17A20.44 20.44 0 0 0 24 44Z"/><path fill="#FBBC05" d="M12.58 27.6A12.1 12.1 0 0 1 12 24c0-1.25.21-2.46.58-3.6v-5.17H5.75A20 20 0 0 0 3.6 24c0 3.22.77 6.25 2.15 8.77l6.83-5.17Z"/><path fill="#EA4335" d="M24 11.97c3.01 0 5.7 1.03 7.83 3.05l5.87-5.87C34.14 5.83 29.52 4 24 4A20.44 20.44 0 0 0 5.75 15.23l6.83 5.17C14.19 15.56 18.69 11.97 24 11.97Z"/></svg>
+            <span>Continue with Google</span>
+          </button>
+          <p style="text-align:center;color:var(--text-3);font-size:12px;margin:18px 0">or continue with email</p>
+        </div>
 
         <div class="field" data-for="signup">
           <label for="au-name">Full name</label>
@@ -1481,7 +1488,7 @@ select.inp{
 
 <!-- Accounts. If config.js is empty or missing, the workspace runs in
      local mode: no sign-in, each user brings their own Anthropic key. -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0"></script>
 <script src="config.js"></script>
 
 <script>
@@ -1615,7 +1622,7 @@ const CFG = window.PRA_CONFIG || {};
 const LIVE_STATUSES = ['active', 'trialing', 'comped'];
 
 const Account = {
-  enabled: !!(CFG.supabaseUrl && CFG.supabaseAnonKey && window.supabase && window.supabase.createClient),
+  enabled: !!(CFG.supabaseUrl && CFG.supabaseAnonKey),
   sb: null,
   session: null,
   profile: null,
@@ -1623,10 +1630,12 @@ const Account = {
 
   async init(){
     if (!this.enabled) return;
+    if (!window.supabase?.createClient) throw new Error('Sign-in could not load. Please refresh and try again.');
     const recovering = /type=recovery/.test(location.hash);
+    const callbackError = new URLSearchParams(location.search).get('error') || new URLSearchParams(location.hash.slice(1)).get('error');
 
     this.sb = window.supabase.createClient(CFG.supabaseUrl, CFG.supabaseAnonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "pkce" }
     });
 
     this.sb.auth.onAuthStateChange((event, session) => {
@@ -1635,10 +1644,36 @@ const Account = {
       if (event === 'SIGNED_OUT') this.profile = null;
     });
 
-    const { data } = await this.sb.auth.getSession();
+    const { data, error } = await this.sb.auth.getSession();
+    if (error) throw new Error('Sign-in could not be completed. Please start sign-in again in this browser.');
+    if (callbackError){
+      history.replaceState(null, '', location.pathname);
+      throw new Error('Google sign-in was cancelled or could not be completed. Please try again.');
+    }
     this.session = data ? data.session : null;
     if (this.session) await this.refresh();
     if (recovering && this.session) Router.showAuth('newpass');
+  },
+
+  async google(){
+    if (!this.enabled || !this.sb || !CFG.googleSignInEnabled){
+      this.say('Google sign-in is not configured yet. Please use the available sign-in option.'); return;
+    }
+    const btn = $('#auth-google');
+    if (btn.disabled) return;
+    btn.disabled = true; btn.setAttribute('aria-busy', 'true'); this.say('');
+    try {
+      const redirectTo = location.origin + location.pathname;
+      const { error } = await this.sb.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo, queryParams: { prompt: 'select_account' } }
+      });
+      if (error) throw error;
+    } catch (err){
+      this.say(/provider.*(disabled|not enabled|unsupported)/i.test(err.message)
+        ? 'Google sign-in is not enabled on the server yet. Please use email sign-in.'
+        : 'Unable to start Google sign-in. Please try again.');
+    } finally { btn.disabled = false; btn.removeAttribute('aria-busy'); }
   },
 
   signedIn(){ return !this.enabled || !!this.session; },
@@ -1691,6 +1726,7 @@ const Account = {
     $('#au-pass-label').textContent = mode === 'newpass' ? 'New password' : 'Password';
     $('#au-pass').setAttribute('autocomplete', mode === 'signin' ? 'current-password' : 'new-password');
     $$('#s-auth [data-for]').forEach(el => { el.hidden = !el.dataset.for.split(' ').includes(mode); });
+    $('#google-auth').hidden = !(this.enabled && CFG.googleSignInEnabled && ['signin','signup'].includes(mode));
     this.say('');
     setTimeout(() => {
       const first = $$('#auth-form .field').find(f => !f.hidden);
@@ -3445,6 +3481,7 @@ const Keys = {
 /* ── 16. BOOT ───────────────────────────────────────────── */
 
 const ACTIONS = {
+  'google-signin': () => Account.google(),
   enter:        () => Router.enterApp(),
   leave:        () => Account.leave(),
   'to-landing':       () => Router.toLanding(),
@@ -3599,7 +3636,7 @@ async function boot(){
   Account.wire();
 
   try { await Account.init(); }
-  catch { Account.enabled = false; }
+  catch (err){ Router.showAuth('signin'); Account.say(err.message || 'Sign-in could not load. Please try again.'); return; }
 
   const q = new URLSearchParams(location.search);
   const billing = q.get('billing');
@@ -3618,7 +3655,7 @@ async function boot(){
   if ($('#s-auth').hasAttribute('data-on')) return;
 
   /* Signed-in users go straight to their workspace. */
-  if (Account.enabled){ if (Account.session) Router.enterApp(); }
+  if (Account.enabled){ if (Account.session) await Account.afterSignIn(); }
   else if (App.hasKey() && (App.matters.length || App.clients.length)) Router.enterApp();
 }
 
