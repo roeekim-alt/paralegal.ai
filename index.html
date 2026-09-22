@@ -1205,6 +1205,7 @@ select.inp{
             <textarea class="inp" id="f-notes" rows="3" placeholder="Unusual terms, a clause you always include, who's the stronger party…"></textarea>
           </div>
 
+          <p id="draft-status" role="status" aria-live="polite" style="white-space:pre-wrap;line-height:1.7;margin:16px 0" hidden></p>
           <button class="btn btn-green" data-act="draft-run" style="width:100%;padding:14px">Draft it</button>
         </div>
       </div></div>
@@ -1443,7 +1444,7 @@ select.inp{
         <span class="key-state" id="state-anthropic" data-state="off">Not set</span>
       </div>
       <div class="field">
-        <input class="inp" id="key-anthropic" type="text" spellcheck="false" autocomplete="off" placeholder="sk-ant-api03-…" style="font-size:13px">
+        <input class="inp" id="key-anthropic" type="password" spellcheck="false" autocomplete="off" placeholder="sk-ant-api03-…" style="font-size:13px">
         <div class="field-hint">
           Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--ledger)">console.anthropic.com/settings/keys</a> — it's shown once, so copy it straight away.
         </div>
@@ -1499,7 +1500,7 @@ select.inp{
    Leave empty and the stage falls back to drawn gradients.          */
 const STAGE_IMAGES = ['./assets/split-brain-justice.png'];
 
-const MODEL      = 'claude-sonnet-4-20250514';
+const MODEL      = 'claude-sonnet-4-6';
 const MODEL_FAST = 'claude-haiku-4-5';
 const API_URL    = 'https://api.anthropic.com/v1/messages';
 
@@ -1587,7 +1588,7 @@ const App = {
   busy: false,
   bpLang: 'he',
 
-  key(){ return Store.read(KEYS.anthropic, '') || ''; },
+  key(){ return String(Store.read(KEYS.anthropic, '') || '').trim(); },
   /* Can this user make a model call right now? Either their plan includes
      hosted drafting, or they have put in their own Anthropic key. */
   hasKey(){
@@ -1988,6 +1989,17 @@ function whenLabel(dateStr){
 /* ── 4. API — the only place a model call is made ───────── */
 
 const Api = {
+  async request(url, options){
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 120000);
+    try { return await fetch(url, {...options, signal: controller.signal}); }
+    catch (err){
+      throw new Error(err.name === 'AbortError'
+        ? 'הבקשה ארכה יותר משתי דקות. נסו ליצור את ההסכם שוב.'
+        : 'לא ניתן להתחבר לשירות ה־AI. בדקו את חיבור האינטרנט או חסימה בדפדפן ונסו שוב.');
+    } finally { clearTimeout(timer); }
+  },
+
   async send(opts){
     const payload = {
       model:      opts.model || MODEL,
@@ -1995,7 +2007,7 @@ const Api = {
       system:     opts.system || undefined,
       messages:   opts.messages
     };
-    const viaProxy = Account.hosted();
+    const viaProxy = !opts.key && Account.hosted();
     let res;
 
     if (viaProxy){
@@ -2004,20 +2016,20 @@ const Api = {
         Router.showAuth('signin');
         throw new Error('Sign in again to keep drafting.');
       }
-      res = await fetch(CFG.supabaseUrl + '/functions/v1/claude', {
+      res = await this.request(CFG.supabaseUrl + '/functions/v1/claude', {
         method: 'POST',
         headers: { 'content-type': 'application/json', authorization: 'Bearer ' + token, apikey: CFG.supabaseAnonKey },
         body: JSON.stringify(Object.assign({}, payload, { feature: opts.feature || null }))
       });
     } else {
-      const key = App.key();
+      const key = opts.key || App.key();
       if (!key){
         Keys.open();
         throw new Error(Account.enabled
           ? 'Choose a plan that includes drafting, or add your own Anthropic key.'
           : 'Add your Anthropic key in settings first.');
       }
-      res = await fetch(API_URL, {
+      res = await this.request(API_URL, {
         method: 'POST',
         headers: {
           'content-type': 'application/json',
@@ -2031,9 +2043,10 @@ const Api = {
 
     let data;
     try { data = await res.json(); }
-    catch { throw new Error('The model returned something unreadable.'); }
+    catch { throw new Error('שירות ה־AI החזיר תשובה לא תקינה (HTTP ' + res.status + '). נסו שוב.'); }
 
-    if (data.error){
+    if (!res.ok || data.error){
+      data.error = data.error || {type: "http_error", message: "HTTP " + res.status};
       const t = data.error.type || '';
       const m = data.error.message || 'Unknown error';
 
@@ -2047,13 +2060,19 @@ const Api = {
         e.authFailed = true;
         throw e;
       }
-      if (t === 'authentication_error' || /api[- ]key|invalid x-api|unauthor/i.test(m)){
-        const e = new Error('That API key was rejected. Check it in settings.');
+      if (/credit balance|insufficient.*credit|billing|payment required/i.test(m)){
+        throw new Error('אין יתרת API מספקת בחשבון Anthropic. יש להוסיף קרדיט ב־Claude Console → Billing; המפתח השמור לא נמחק.');
+      }
+      if (t === 'not_found_error' || /model.*(not found|not exist|retired|deprecated)/i.test(m)){
+        throw new Error('המודל המבוקש אינו זמין לחשבון. רעננו את האתר ובדקו את הרשאות המודל ב־Anthropic.');
+      }
+      if (t === 'authentication_error' || /invalid x-api|unauthor/i.test(m)){
+        const e = new Error('Anthropic דחתה את מפתח ה־API. בדקו בהגדרות שהמפתח בתוקף ושייך לחשבון הנכון.');
         e.authFailed = true;
         throw e;
       }
-      if (t === 'rate_limit_error') throw new Error('Rate limit — give it thirty seconds.');
-      if (t === 'overloaded_error') throw new Error('Anthropic is busy right now. Try again in a moment.');
+      if (t === 'rate_limit_error') throw new Error('הגעתם למגבלת הקצב של Anthropic. המתינו כחצי דקה ונסו שוב.');
+      if (t === 'overloaded_error') throw new Error('שירות Anthropic עמוס כרגע. נסו שוב בעוד רגע.');
       throw new Error(m);
     }
 
@@ -2064,7 +2083,8 @@ const Api = {
       .map(b => b.text)
       .join('');
 
-    if (!text) throw new Error('The model returned an empty response.');
+    if (!text) throw new Error('שירות ה־AI החזיר תשובה ריקה. נסו שוב.');
+    if (data.stop_reason === 'max_tokens') throw new Error('התשובה נקטעה עקב מגבלת האורך. צמצמו את ההנחיות או צרו את ההסכם בחלקים; הטיוטה החלקית לא הוצגה כמסמך שלם.');
     return text;
   },
 
@@ -2475,6 +2495,9 @@ const Draft = {
       })
       .filter(Boolean).join('\n');
 
+    const status = $('#draft-status'), button = $('[data-act="draft-run"]');
+    status.hidden = false; status.textContent = 'מכין את ההסכם… הפעולה עשויה להימשך עד שתי דקות.';
+    status.style.color = 'var(--text-2)'; button.disabled = true;
     working(true);
     toast('Frank is drafting — this takes a moment');
 
@@ -2500,20 +2523,22 @@ const Draft = {
       (notes ? '\n\nFrom the instructing lawyer: ' + notes : '');
 
     try {
-      const md = await Api.send({ max: 4000, feature: 'draft', system, messages:[{ role:'user', content: prompt }] });
+      const md = await Api.send({ max: 8000, feature: 'draft', system, messages:[{ role:'user', content: prompt }] });
       Doc.show({
         title: inst.name + ' Agreement',
         html: render(md),
         dir: lang === 'he' ? 'rtl' : 'ltr',
         kind: inst.name
       });
-      toast('Draft ready — read it before it leaves');
+      status.hidden = true;
+      toast('הטיוטה מוכנה לבדיקה ועריכה');
       Account.log('draft', { instrument: App.instrument, lang, law });
     } catch (err){
+      status.textContent = err.message; status.style.color = 'var(--alarm)';
       toast(err.message, 'bad');
       if (err.authFailed) Keys.open();
     } finally {
-      working(false);
+      button.disabled = false; working(false);
     }
   }
 };
@@ -3395,38 +3420,16 @@ const Keys = {
   },
 
   async test(){
-    const key = val('key-anthropic');
-    if (!key){ toast('Put a key in first', 'bad'); return; }
-
-    const btn = $('#btn-test');
-    const label = btn.textContent;
-    btn.textContent = 'Checking…';
-    btn.disabled = true;
-
+    const key = val('key-anthropic').trim();
+    if (!key){ toast('הזינו מפתח לבדיקה', 'bad'); return; }
+    const btn = $('#btn-test'), label = btn.textContent;
+    btn.textContent = 'בודק חיבור למודל ההסכמים…'; btn.disabled = true;
     try {
-      const res = await fetch(API_URL, {
-        method:'POST',
-        headers:{
-          'content-type':'application/json',
-          'x-api-key': key,
-          'anthropic-version':'2023-06-01',
-          'anthropic-dangerous-direct-browser-access':'true'
-        },
-        body: JSON.stringify({ model: MODEL_FAST, max_tokens: 8, messages:[{ role:'user', content:'hi' }] })
-      });
-      const data = await res.json();
-      if (data.error) toast(data.error.message, 'bad');
-      else {
-        Store.write(KEYS.anthropic, key);
-        this.sync();
-        toast('Key works — saved');
-      }
-    } catch (err){
-      toast('Could not reach Anthropic: ' + err.message, 'bad');
-    } finally {
-      btn.textContent = label;
-      btn.disabled = false;
-    }
+      await Api.send({key, model:MODEL, max:32, messages:[{role:'user',content:'Reply with OK only.'}]});
+      Store.write(KEYS.anthropic, key); this.sync();
+      toast('החיבור למודל ההסכמים תקין — המפתח נשמר');
+    } catch(err){ toast(err.message, 'bad'); }
+    finally { btn.textContent = label; btn.disabled = false; }
   },
 
   wipe(){

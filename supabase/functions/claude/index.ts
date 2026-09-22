@@ -22,10 +22,10 @@ const SERVICE_KEY    = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
 // USD per million tokens. Update if Anthropic's prices change.
 const PRICES: Record<string, { input: number; output: number }> = {
-  "claude-sonnet-4-20250514": { input: 3, output: 15 },
+  "claude-sonnet-4-6": { input: 3, output: 15 },
   "claude-haiku-4-5":         { input: 1, output: 5 },
 };
-const DEFAULT_MODEL  = "claude-sonnet-4-20250514";
+const DEFAULT_MODEL  = "claude-sonnet-4-6";
 const MAX_OUTPUT     = 8000;
 const LIVE_STATUSES  = ["active", "trialing", "comped"];
 
