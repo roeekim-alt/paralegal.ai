@@ -44,9 +44,9 @@ const Workspace = {
   save(force=false){
     if(!this.active)return true;
     clearTimeout(this.timer);this.sync();const docs=this.all(this.docKey),i=docs.findIndex(d=>d.id===App.doc.id),old=i<0?null:docs[i],now=Date.now();
-    const changed=!old||old.html!==App.doc.html||old.title!==App.doc.title||old.dir!==App.doc.dir||old.matterId!==App.doc.matterId;
+    const changed=!old||old.html!==App.doc.html||old.title!==App.doc.title||old.dir!==App.doc.dir||old.matterId!==App.doc.matterId||JSON.stringify(old.court)!==JSON.stringify(App.doc.court);
     let history=old?.history||[];
-    if(old && changed && (force || !history.length || now-history[0].at>60000)) history=[{html:old.html,title:old.title,dir:old.dir,at:old.updated},...history].slice(0,20);
+    if(old && changed && (force || !history.length || now-history[0].at>60000)) history=[{html:old.html,title:old.title,dir:old.dir,court:old.court,at:old.updated},...history].slice(0,20);
     const record={...App.doc,history,updated:changed?now:old.updated};
     if(i<0)docs.unshift(record);else docs[i]=record;
     try{ localStorage.setItem(this.docKey,JSON.stringify(docs));this.dirty=false;$('#ws-save').textContent='נשמר בדפדפן · '+new Date(record.updated).toLocaleTimeString('he-IL',{hour:'2-digit',minute:'2-digit'});this.history(history);return true; }
@@ -129,7 +129,7 @@ const Workspace = {
     document.addEventListener('click',e=>{
       const cmd=e.target.closest('[data-cmd]');if(cmd){this.command(cmd.dataset.cmd);return;}
       const open=e.target.closest('[data-open]');if(open){const d=this.all().find(x=>x.id===open.dataset.open);if(d)this.show(d);return;}
-      const ver=e.target.closest('[data-version]');if(ver){const d=this.all().find(x=>x.id===App.doc.id),v=d?.history[Number(ver.dataset.version)];if(v&&confirm('לשחזר לגרסה זו? הגרסה הנוכחית תישמר בהיסטוריה.')){if(!this.save(true))return;$('#doc').innerHTML=this.clean(v.html);$('#doc').dir=v.dir;$('#ws-title').value=v.title;$('#ws-dir').value=v.dir;this.changed();this.save(true);}return;}
+      const ver=e.target.closest('[data-version]');if(ver){const d=this.all().find(x=>x.id===App.doc.id),v=d?.history[Number(ver.dataset.version)];if(v&&confirm('לשחזר לגרסה זו? הגרסה הנוכחית תישמר בהיסטוריה.')){if(!this.save(true))return;App.doc.court=v.court;$('#doc').classList.toggle('pl-document',!!v.court);if($('#pl-tools'))$('#pl-tools').hidden=!v.court;$('#doc').innerHTML=this.clean(v.html);$('#doc').dir=v.dir;$('#ws-title').value=v.title;$('#ws-dir').value=v.dir;this.changed();this.save(true);}return;}
       const quick=e.target.closest('[data-prompt]');if(quick){$('#ws-prompt').value=quick.dataset.prompt;return;}
       const b=e.target.closest('[data-ws]');if(!b)return;
       const actions={new:()=>this.show({title:'מסמך חדש',html:'<p><br></p>',dir:'rtl',kind:'Document'}),templates:()=>this.templates(),library:()=>Router.to('documents'),import:()=>$('#ws-file').click(),save:()=>{if(this.save(true))toast('הגרסה נשמרה בדפדפן');},word:()=>this.word(),pdf:()=>{this.sync();Doc.pdf();},copy:()=>{this.sync();Doc.copy();},backup:()=>this.backup(),focus:()=>$('.ws-body').toggleAttribute('data-focus'),table:()=>this.command('insertHTML','<table><tbody><tr><td>כותרת</td><td>כותרת</td></tr><tr><td><br></td><td><br></td></tr></tbody></table><p><br></p>'),suggest:()=>this.suggest(),accept:()=>this.accept(),reject:()=>{this.reject();$('#ws-ai-status').textContent='ההצעה נדחתה. המסמך לא השתנה.';},review:()=>{this.sync();Doc.review();}};
@@ -152,4 +152,5 @@ const originalLeave=Account.leave.bind(Account);
 Account.leave=async function(){if(Workspace.active&&!Workspace.save(true))return;Workspace.active=false;Workspace.range=null;Workspace.reject();$('#doc').innerHTML='';App.doc={title:'',html:'',dir:'rtl'};return originalLeave();};
 
 Keys.wipe=function(){if(!confirm('למחוק את המפתחות, היומן, המסמכים והגרסאות של החשבון הנוכחי בדפדפן, התיקים, הלקוחות והשיחות המקומיות?'))return;Workspace.active=false;Workspace.dirty=false;clearTimeout(Workspace.timer);localStorage.removeItem(Workspace.key());if(typeof Diary!=='undefined')localStorage.removeItem(Diary.key());Object.values(KEYS).forEach(k=>Store.drop(k));App.matters=[];App.clients=[];App.thread=[];App.doc={html:'',title:'',dir:'rtl'};$('#doc').innerHTML='';Workspace.range=null;Workspace.reject();Counts.sync();Matters.paint();Clients.paint();Drawer.greet();this.sync();this.close();Router.to('documents');toast('הנתונים המקומיים נמחקו');};
+
 

@@ -1,0 +1,27 @@
+const assert=require('node:assert/strict');
+const P=require('../assets/pleadings.js');
+const profile=(x)=>P.profile({type:'claim',level:'magistrate',track:'regular',...x});
+assert.deepEqual(profile().parts.map(x=>x.limit),[null,2,9]);
+assert.deepEqual(profile({level:'district',amount:'2500000'}).parts.map(x=>x.limit),[null,3,12]);
+assert.deepEqual(profile({level:'district',amount:'2500001'}).parts.map(x=>x.limit),[null,5,25]);
+assert.deepEqual(profile({level:'district',track:'injury'}).parts.map(x=>x.limit),[null,5,25]);
+assert.deepEqual(profile({level:'magistrate',track:'injury'}).parts.map(x=>x.limit),[null,2,9]);
+assert.deepEqual(profile({type:'interim'}).parts.map(x=>x.limit),[null,8,6]);
+assert.deepEqual(profile({type:'response'}).parts.map(x=>x.limit),[null,5,3]);
+assert.equal(profile({type:'reply'}).parts[1].limit,3);
+assert.equal(profile({type:'appeal',level:'supreme'}).parts[1].limit,12);
+assert.throws(()=>profile({type:'unknown'}));
+for(const type of P.types)assert.ok(profile({type:type[0]}).parts.length);
+// Execute actual export path with DOM-shaped document nodes and the installed DOCX implementation.
+const vm=require('node:vm'),fs=require('node:fs');
+const browser={Blob,TextEncoder,TextDecoder,setTimeout,clearTimeout};
+vm.createContext(browser);
+vm.runInContext(fs.readFileSync(require.resolve('../assets/vendor/docx.js'),'utf8'),browser);
+global.window={docx:browser.docx};
+global.App={doc:{court:{profile:profile(),data:{},annexes:Array.from({length:6},(_,i)=>({title:'מסמך '+i}))}}};
+global.Workspace={sync(){}};
+global.toast=(message)=>{if(message.startsWith('ייצוא לא הושלם'))throw Error(message);};
+P.groups=()=>[...profile().parts.map((p,i)=>({name:p.name,index:i,annex:false,nodes:[{nodeType:1,tagName:'P',textContent:'1. עובדה משפטית לדוגמה',children:[]}]})),...App.doc.court.annexes.map((a,i)=>({name:'נספח '+(i+1)+' — '+a.title,index:3+i,annex:true,nodes:[{nodeType:1,tagName:'P',textContent:'תוכן נספח',children:[]}]}))];
+let saved=false;
+global.Doc={filename:()=>require('path').join(require('os').tmpdir(),'court-export-test.docx'),async download(blob,path){require('fs').writeFileSync(path,Buffer.from(await blob.arrayBuffer()));saved=true;}};
+(async()=>{await P.word();await new Promise(r=>setTimeout(r,50));assert.ok(saved);console.log('PASS: rule boundaries, 25 document types, actual DOCX export with six annexes.');})().catch(e=>{console.error(e);process.exit(1)});
