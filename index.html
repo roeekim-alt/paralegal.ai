@@ -2044,6 +2044,7 @@ const Api = {
       messages:   opts.messages
     };
     const viaProxy = !opts.key && Account.hosted();
+    if(opts.onProgress && !viaProxy)payload.stream=true;
     let res;
 
     if (viaProxy){
@@ -2078,8 +2079,11 @@ const Api = {
     }
 
     let data;
-    try { data = await res.json(); }
-    catch { throw new Error('שירות ה־AI החזיר תשובה לא תקינה (HTTP ' + res.status + '). נסו שוב.'); }
+    if(opts.onProgress)data=await Generation.readResponse(res,opts.onProgress);
+    else {
+      try { data = await res.json(); }
+      catch { throw new Error('שירות ה־AI החזיר תשובה לא תקינה (HTTP ' + res.status + '). נסו שוב.'); }
+    }
 
     if (!res.ok || data.error){
       data.error = data.error || {type: "http_error", message: "HTTP " + res.status};
@@ -2120,6 +2124,7 @@ const Api = {
       .join('');
 
     if (!text) throw new Error('שירות ה־AI החזיר תשובה ריקה. נסו שוב.');
+    if(opts.returnMessage)return {text,stop_reason:data.stop_reason};
     if (data.stop_reason === 'max_tokens') throw new Error('התשובה נקטעה עקב מגבלת האורך. צמצמו את ההנחיות או צרו את ההסכם בחלקים; הטיוטה החלקית לא הוצגה כמסמך שלם.');
     return text;
   },
@@ -2516,7 +2521,8 @@ const Draft = {
   async run(){
     if (App.busy) return;
     if (!App.instrument){ toast('Pick what you are drafting first', 'bad'); return; }
-    if (!App.hasKey()){ Keys.open(); return; }
+    if (!App.hasKey()){ const s=$('#draft-status');s.hidden=false;s.textContent='לא נמצא מפתח API בדפדפן הזה. פתחו הגדרות ובדקו את החיבור.';Keys.open(); return; }
+    if(Workspace.active&&!Workspace.save(true))return;
 
     const inst = INSTRUMENTS.find(i => i.id === App.instrument);
     const fields = FORMS[App.instrument] || [];
@@ -2532,7 +2538,7 @@ const Draft = {
       .filter(Boolean).join('\n');
 
     const status = $('#draft-status'), button = $('[data-act="draft-run"]');
-    status.hidden = false; status.textContent = 'מכין את ההסכם… הפעולה עשויה להימשך עד שתי דקות.';
+    status.hidden = false; status.textContent = 'מכין את ההסכם… ההתקדמות תוצג בחלון הטעינה.';
     status.style.color = 'var(--text-2)'; button.disabled = true;
     working(true);
     toast('Frank is drafting — this takes a moment');
@@ -2559,20 +2565,22 @@ const Draft = {
       (notes ? '\n\nFrom the instructing lawyer: ' + notes : '');
 
     try {
-      const md = await Api.send({ max: 8000, feature: 'draft', system, messages:[{ role:'user', content: prompt }] });
+      const md = await Generation.complete({ max: 8000, feature: 'draft', system, messages:[{ role:'user', content: prompt }] });
       Doc.show({
         title: inst.name + ' Agreement',
         html: render(md),
         dir: lang === 'he' ? 'rtl' : 'ltr',
         kind: inst.name
       });
+      Generation.finish();
       status.hidden = true;
       toast('הטיוטה מוכנה לבדיקה ועריכה');
       Account.log('draft', { instrument: App.instrument, lang, law });
     } catch (err){
+      Generation.fail(err);
       status.textContent = err.message; status.style.color = 'var(--alarm)';
       toast(err.message, 'bad');
-      if (err.authFailed) Keys.open();
+      // Keep the error readable; settings remain available after closing it.
     } finally {
       button.disabled = false; working(false);
     }
@@ -3251,11 +3259,12 @@ const Plan = {
       (hebrew ? 'Write the entire plan in Hebrew. ' : 'Write the plan in English, keeping the Hebrew section names. ') +
       'Output markdown only: # for the plan title, ## for each of the thirteen sections. No preamble.';
 
+    if(Workspace.active&&!Workspace.save(true))return;
     working(true);
     toast('Frank is writing the plan — around a minute');
 
     try {
-      const md = await Api.send({
+      const md = await Generation.complete({
         max: 8000, feature: 'plan', system,
         messages: [{ role:'user', content:'Write the full business plan.\n\n' + lines }]
       });
@@ -3265,11 +3274,12 @@ const Plan = {
         dir: hebrew ? 'rtl' : 'ltr',
         kind: 'Business plan'
       });
-      toast('Plan ready');
+      Generation.finish();
+      toast('התוכנית מוכנה לעריכה');
       Account.log('plan', { track: val('bp-track'), lang: App.bpLang });
     } catch (err){
       toast(err.message, 'bad');
-      if (err.authFailed) Keys.open();
+      Generation.fail(err);
     } finally { working(false); }
   }
 };
@@ -3667,6 +3677,8 @@ else boot();
 <script src="./assets/workspace.js"></script>
 <link rel="stylesheet" href="./assets/calendar.css">
 <script src="./assets/calendar.js"></script>
+<link rel="stylesheet" href="./assets/generation.css">
+<script src="./assets/generation.js"></script>
 </body>
 </html>
 
