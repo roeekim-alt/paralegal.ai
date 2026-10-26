@@ -119,12 +119,6 @@
       Router.enterApp=()=>{oldEnter();if($('#s-app').hasAttribute('data-on'))Router.to('home');};
       VIEW_TITLE.home='דשבורד';
       VIEW_TITLE.workflows='AI Workflows';
-      const oldWipe=Keys.wipe.bind(Keys);
-      // Workspace's wipe operation requires confirmation. A confirmed wipe clears all workflow artifacts too.
-      Keys.wipe=()=>{const exists=localStorage.getItem(this.key());const originalConfirm=window.confirm;
-        // Do not interfere with the existing confirmation UI: use a separate, clearly labeled workflow action.
-        oldWipe();if(exists&&!this.jobs().length)this.selected=null;
-      };
       this.paint();
     },
     status(message){const el=$('#p-agent-status');if(el)el.textContent=message||'';},
