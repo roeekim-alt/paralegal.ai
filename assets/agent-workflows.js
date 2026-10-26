@@ -65,6 +65,7 @@
               <button class="premium-tile" data-go="workflows"><span class="premium-symbol">✦</span><strong>AI Workflows</strong><small>מטלה אחת, ארבעה שלבים, טיוטה ובקרת איכות לפני אישור אנושי.</small></button>
               <button class="premium-tile" data-go="pleadings"><span class="premium-symbol">⚖</span><strong>כתבי בי־דין</strong><small>טיוטות ויצוא Word עם כללי עימוד ובדיקות צורניות.</small></button>
               <button class="premium-tile" data-go="documents"><span class="premium-symbol">▤</span><strong>המסמכים שלי</strong><small>עריכת מסמכים, גרסאות, שינויים מבוקרים וייצוא.</small></button>
+              <button class="premium-tile" data-go="sources"><span class="premium-symbol">⌁</span><strong>איתור מסמכים ממקורות מידע</strong><small>חיפוש במחשב, בחשבון Gmail מורשה או דרך בורר הקבצים בטלפון.</small></button>
               <button class="premium-tile" data-go="matters"><span class="premium-symbol">▣</span><strong>ניהול תיקים</strong><small>לקוחות, חומרי עבודה, משימות ומעקב שוטף.</small></button>
               <button class="premium-tile" data-go="diary"><span class="premium-symbol">◷</span><strong>יומן ומועדים</strong><small>תכנון ומעקב; יש לבדוק כל מועד מול מקור משפטי מחייב.</small></button>
               <button class="premium-tile" data-go="read"><span class="premium-symbol">⌕</span><strong>ניתוח מסמך</strong><small>סקירת הסכמים ומסמכים משפטיים בעזרת AI.</small></button>
@@ -173,7 +174,7 @@
     },
     newJob(){
       if(this.busy)return;
-      this.selected=null;$('#p-agent-title').value='';$('#p-agent-facts').value='';
+      this.selected=null;window.PRASources?.clearSelected?.();$('#p-agent-title').value='';$('#p-agent-facts').value='';
       $('#p-agent-file').value='';$('#p-agent-consent').checked=false;$('#p-agent-reviewed').checked=false;
       $('#p-agent-output-panel').hidden=true;this.paintSteps(null);this.status('');
       const linked=$('#p-agent-linked');if(linked)linked.textContent=(window.PRASources?.selectedNames?.().length?'קבצים ממקורות מידע: '+window.PRASources.selectedNames().join(' · '):'אפשר לבחור מסמכים מתוך ״מקורות מידע״ ולהוסיף אותם לתהליך הזה.');
