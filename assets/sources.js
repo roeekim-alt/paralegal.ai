@@ -30,7 +30,9 @@
     selectedNames(){return this.chosen.map(row=>row.name);},
     clear(){
       this.index=[];this.chosen=[];this.mail=[];this.activeDir=null;
+      const oldToken=this.gmailToken;
       this.gmailToken='';this.gmailExpires=0;
+      if(oldToken&&window.google?.accounts?.oauth2?.revoke)window.google.accounts.oauth2.revoke(oldToken,()=>{});
       this.say('החיפוש המקומי והבחירה נמחקו מהזיכרון בדפדפן. כדי לבטל גם הרשאת תיקייה מתמשכת, השתמשו בהגדרות האתר בדפדפן.');
       this.paintIndex([]);this.paintMail([]);this.paintTray();
     },
@@ -69,7 +71,7 @@
       this.paintTray();
       if(!window.showDirectoryPicker)this.say('בדפדפן זה אין בחירת תיקייה מתקדמת. השתמשו ב״בחירה חלופית״ או בחרו קבצים בנפרד.');
       const client=(window.PRA_CONFIG?.gmailOAuthClientId||'').trim();
-      if(!client)this.say('חיבור Gmail עדיין לא הוגדר במוצר. נדרש OAuth Client ID ואימות הרשאות של Google.','#p-src-status');
+      if(!client)this.say('חיבור Gmail עדיין לא הוגדר במוצר. נדרש OAuth Client ID ואימות הרשאות של Google.','#p-src-gmail-status');
     },
     async chooseDirectory(){
       if(this.scanning)return;
@@ -185,7 +187,7 @@
     removeFile(id){this.chosen=this.chosen.filter(row=>row.id!==id);this.paintTray();},
     paintTray(){
       const host=qs('#p-src-selected');if(!host)return;host.replaceChildren();
-      if(!this.chosen.length){host.append(mk('p','טרם נבחרו קבצים.','src-muted'));return;}
+      if(!this.chosen.length){host.append(mk('p','טרם נבחרו קבצים.','src-muted'));const disabled=qs('#p-src-to-agent');if(disabled)disabled.disabled=true;return;}
       for(const row of this.chosen){
         host.append(this.itemRow(row.name,row.from+' · '+this.size(row.file.size),'הסר',()=>this.removeFile(row.id)));
       }
@@ -218,7 +220,7 @@
       const clientId=String(window.PRA_CONFIG?.gmailOAuthClientId||'').trim();
       if(!clientId){this.say('חיבור Gmail דורש הגדרת OAuth Client ID ציבורי, Google OAuth consent screen ואימות ההרשאה gmail.readonly. אין חיבור פעיל כרגע.','#p-src-gmail-status');return;}
       try{
-        await this.googleScript();
+        if(!window.google?.accounts?.oauth2){await this.googleScript();this.say('רכיב Google נטען. לחצו שוב על ״חבר Gmail״ כדי לפתוח את חלון ההרשאה.','#p-src-gmail-status');return;}
         const token=await new Promise((resolve,reject)=>{
           const c=window.google.accounts.oauth2.initTokenClient({
             client_id:clientId,scope:'https://www.googleapis.com/auth/gmail.readonly',
