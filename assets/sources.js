@@ -197,6 +197,7 @@
       return true;
     },
     removeFile(id){this.chosen=this.chosen.filter(row=>row.id!==id);this.paintTray();},
+    clearSelected(){this.chosen=[];this.paintTray();this.say('הקבצים הוסרו מרשימת ההעברה לתהליך AI.');},
     paintTray(){
       const host=qs('#p-src-selected');if(!host)return;host.replaceChildren();
       if(!this.chosen.length){host.append(mk('p','טרם נבחרו קבצים.','src-muted'));const disabled=qs('#p-src-to-agent');if(disabled)disabled.disabled=true;return;}
@@ -262,6 +263,7 @@
     },
     disconnectGmail(){
       const token=this.gmailToken;this.gmailToken='';this.gmailExpires=0;this.mail=[];
+      this.chosen=this.chosen.filter(row=>row.from!=='Gmail');this.paintTray();
       this.paintMail([]);
       if(token&&window.google?.accounts?.oauth2?.revoke)window.google.accounts.oauth2.revoke(token,()=>{});
       this.say('הטוקן נמחק מהזיכרון בדפדפן, ונשלחה ל־Google בקשת ביטול הרשאה כאשר השירות זמין.','#p-src-gmail-status');
