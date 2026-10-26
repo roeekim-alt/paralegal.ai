@@ -23,7 +23,7 @@
   const supported = name => FILE_TYPES.test(name) && !PRIVATE_NAMES.test(name);
   const gmailBase = 'https://gmail.googleapis.com/gmail/v1/users/me';
   const Sources = {
-    ready:false, scanning:false, index:[], chosen:[], gmailToken:'', gmailExpires:0, mail:[],
+    ready:false, scanning:false, index:[], chosen:[], gmailToken:'', gmailExpires:0, mail:[], accountKey:null,
     activeDir:null, externalFileName:'',
     say(text, id='#p-src-status'){const el=qs(id);if(el)el.textContent=text;},
     selectedFiles(){return this.chosen.map(row=>row.file);},
@@ -34,6 +34,7 @@
       this.gmailToken='';this.gmailExpires=0;
       if(oldToken&&window.google?.accounts?.oauth2?.revoke)window.google.accounts.oauth2.revoke(oldToken,()=>{});
       this.say('החיפוש המקומי והבחירה נמחקו מהזיכרון בדפדפן. כדי לבטל גם הרשאת תיקייה מתמשכת, השתמשו בהגדרות האתר בדפדפן.');
+      this.say('חיבור Gmail נותק ונמחק מהזיכרון של הדפדפן.','#p-src-gmail-status');
       this.paintIndex([]);this.paintMail([]);this.paintTray();
     },
     mount(){
@@ -45,6 +46,7 @@
       const rail=qs('#s-app .rail');rail.insertBefore(button,rail.querySelector('.rail-gap'));
       button.addEventListener('click',()=>Router.to('sources'));
       VIEW_TITLE.sources='מקורות מידע';
+      this.accountKey=Account.session?.user?.id||'local';
       const section=document.createElement('section');section.className='view';section.id='v-sources';
       section.innerHTML = '<div class="scroller"><div class="premium-container src-shell" dir="rtl">' +
         '<div class="premium-heading"><div><span class="premium-eyebrow">PRA SOURCES · SCOPED ACCESS</span><h2>מקורות מידע</h2><p>אתרו קבצים בתיקייה שבחרתם, במייל שהתחברתם אליו, או דרך בורר הקבצים בטלפון. רק קבצים שתאשרו יועברו ל־AI.</p></div><button class="premium-action" id="p-src-reset">נקה ובטל בחירה</button></div>' +
@@ -67,7 +69,17 @@
       qs('#p-src-phone').addEventListener('change',e=>this.importPhoneFiles(e.target.files));
       qs('#p-src-to-agent').addEventListener('click',()=>this.toWorkflow());
       const originalTo=Router.to.bind(Router);
-      Router.to=(page)=>{originalTo(page);if(page==='sources')this.paintTray();};
+      Router.to=(page)=>{
+        const current=Account.session?.user?.id||'local';
+        if(current!==this.accountKey){this.clear();this.accountKey=current;}
+        originalTo(page);if(page==='sources')this.paintTray();
+      };
+      const previousLeave=Account.leave?.bind(Account);
+      if(previousLeave)Account.leave=async (...args)=>{
+        const result=await previousLeave(...args);
+        if(!Account.session)this.clear();
+        return result;
+      };
       this.paintTray();
       if(!window.showDirectoryPicker)this.say('בדפדפן זה אין בחירת תיקייה מתקדמת. השתמשו ב״בחירה חלופית״ או בחרו קבצים בנפרד.');
       const client=(window.PRA_CONFIG?.gmailOAuthClientId||'').trim();
