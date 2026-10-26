@@ -69,7 +69,7 @@
       this.paintTray();
       if(!window.showDirectoryPicker)this.say('בדפדפן זה אין בחירת תיקייה מתקדמת. השתמשו ב״בחירה חלופית״ או בחרו קבצים בנפרד.');
       const client=(window.PRA_CONFIG?.gmailOAuthClientId||'').trim();
-      if(!client)this.say('חיבור Gmail עדיין לא הוגדר במוצר. נדרש OAuth Client ID ואימות הרשאות של Google.',''#);
+      if(!client)this.say('חיבור Gmail עדיין לא הוגדר במוצר. נדרש OAuth Client ID ואימות הרשאות של Google.','#p-src-status');
     },
     async chooseDirectory(){
       if(this.scanning)return;
@@ -172,7 +172,7 @@
       el.append(copy,b);return el;
     },
     addFile(file,from,id){
-      if(!file||!supported(file.name)){this.say('סוג קובץ אינו נתמך או ששמו נראה כקובץ סודות.',''#);return false;}
+      if(!file||!supported(file.name)){this.say('סוג קובץ אינו נתמך או ששמו נראה כקובץ סודות.','#p-src-status');return false;}
       if(file.size<=0||file.size>MAX_FILE){this.say('ניתן לבחור קובץ עד 8MB בלבד.');return false;}
       const key=id||from+':'+file.name+':'+file.size+':'+file.lastModified;
       if(this.chosen.some(row=>row.id===key)){this.say('הקובץ כבר נבחר.');return false;}
