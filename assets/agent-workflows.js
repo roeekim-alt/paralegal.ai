@@ -84,9 +84,9 @@
               <input class="inp" id="p-agent-title" placeholder="למשל: חברה א' נ' חברה ב'">
               <label for="p-agent-facts">עובדות, דרישות והנחיות</label>
               <textarea id="p-agent-facts" rows="6" placeholder="הדביקו עובדות ומלל רלוונטי. כדאי לציין מהו מסמך המקור של כל טענה."></textarea>
-              <label for="p-agent-file">מסמכי מקור (PDF / DOCX / TXT, עד 3)</label>
-              <input id="p-agent-file" type="file" multiple accept=".pdf,.docx,.txt,.md">
-              <label class="agent-consent"><input id="p-agent-consent" type="checkbox"><span>אני מורשה לעבד את החומר ומבין שתוכן המשימה והקבצים יישלחו לשירות המודל שבו אני משתמש. לא אעלה מידע חסוי בלי לבדוק שמתקיימים תנאי האבטחה והסודיות המתאימים.</span></label>
+              <label for="p-agent-file">מסמכי מקור (PDF / DOCX / TXT / EML / תמונות, עד 3)</label>
+              <input id="p-agent-file" type="file" multiple accept=".pdf,.docx,.txt,.md,.eml,.png,.jpg,.jpeg,.webp">
+              <div id="p-agent-linked" role="status">אפשר לבחור מסמכים מתוך ״מקורות מידע״ ולהוסיף אותם לתהליך הזה.</div><button type="button" class="premium-action" data-go="sources">אתר קבצים במחשב, Gmail או בטלפון</button><label class="agent-consent"><input id="p-agent-consent" type="checkbox"><span>אני מורשה לעבד את החומר ומבין שתוכן המשימה והקבצים יישלחו לשירות המודל שבו אני משתמש. לא אעלה מידע חסוי בלי לבדוק שמתקיימים תנאי האבטחה והסודיות המתאימים.</span></label>
               <div class="agent-controls"><button id="p-agent-start" class="premium-action primary">התחל תהליך AI</button><button id="p-agent-cancel" class="premium-action" disabled>עצור אחרי השלב הנוכחי</button><button id="p-agent-new" class="premium-action">משימה חדשה</button></div>
               <div id="p-agent-status" class="agent-status" role="status" aria-live="polite"></div>
               <ol class="agent-steps" id="p-agent-steps">
@@ -141,6 +141,7 @@
         host.append(b);
       }
       const job=this.getSelected();if(job)this.showJob(job);else this.paintSteps(null);
+      const linked=$('#p-agent-linked');if(linked)linked.textContent=(window.PRASources?.selectedNames?.().length?'קבצים ממקורות מידע: '+window.PRASources.selectedNames().join(' · '):'אפשר לבחור מסמכים מתוך ״מקורות מידע״ ולהוסיף אותם לתהליך הזה.');
     },
     paintSteps(job){
       $$('#p-agent-steps li').forEach((el,i)=>{
@@ -171,6 +172,7 @@
       this.selected=null;$('#p-agent-title').value='';$('#p-agent-facts').value='';
       $('#p-agent-file').value='';$('#p-agent-consent').checked=false;$('#p-agent-reviewed').checked=false;
       $('#p-agent-output-panel').hidden=true;this.paintSteps(null);this.status('');
+      const linked=$('#p-agent-linked');if(linked)linked.textContent=(window.PRASources?.selectedNames?.().length?'קבצים ממקורות מידע: '+window.PRASources.selectedNames().join(' · '):'אפשר לבחור מסמכים מתוך ״מקורות מידע״ ולהוסיף אותם לתהליך הזה.');
     },
     async filePart(file){
       if(/\.docx$/i.test(file.name)){
@@ -180,7 +182,12 @@
         if(result.value.length>28000)throw Error('הקובץ '+file.name+' ארוך מדי לקריאה מלאה. חלקו אותו לפני העלאה.');
         return {type:'text',text:'=== '+file.name+' ===\n'+result.value.slice(0,28000)};
       }
-      if(/\.(txt|md)$/i.test(file.name)){const text=await file.text();if(text.length>14000)throw Error('הקובץ '+file.name+' ארוך מדי (14,000 תווים). חלקו אותו לקבצים קטנים יותר.');return {type:'text',text:'=== '+file.name+' ===\n'+text};}
+      if(/\.(txt|md|eml)$/i.test(file.name)){const text=await file.text();if(text.length>14000)throw Error('הקובץ '+file.name+' ארוך מדי (14,000 תווים). חלקו אותו לקבצים קטנים יותר.');return {type:'text',text:'=== '+file.name+' ===\n'+text};}
+      if(/\.(png|jpe?g|webp)$/i.test(file.name)){
+        const media= /\.png$/i.test(file.name)?'image/png':/\.webp$/i.test(file.name)?'image/webp':'image/jpeg';
+        const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(Error('קריאת התמונה נכשלה'));reader.readAsDataURL(file);});
+        return {type:'image',source:{type:'base64',media_type:media,data}};
+      }
       return Api.part(file);
     },
     async run(){
@@ -189,13 +196,14 @@
       if(!$('#p-agent-consent').checked){this.status('יש לאשר שהמידע מתאים להעברה לשירות המודל.');return;}
       const kind=$('#p-agent-type').value,task=templates[kind];
       const notes=$('#p-agent-facts').value.trim();
-      const files=[...$('#p-agent-file').files];
+      const external=window.PRASources?.selectedFiles?.()||[];
+      const files=[...external,...$('#p-agent-file').files];
       if(!task)return this.status('סוג משימה לא נתמך.');
       if(!notes&&!files.length)return this.status('יש להזין עובדות או לצרף מסמך מקור.');
       if(notes.length>25000)return this.status('הטקסט ארוך מדי. הגבילו ל־25,000 תווים.');
       if(files.length>3||files.some(f=>f.size>8*1024*1024)||files.reduce((n,f)=>n+f.size,0)>12*1024*1024)
         return this.status('עד 3 קבצים, 8MB לקובץ ו־12MB בסך הכול.');
-      if(files.some(f=>!(/\.(pdf|txt|md|docx)$/i.test(f.name))))return this.status('הקבצים חייבים להיות PDF, DOCX, TXT או MD.');
+      if(files.some(f=>!(/\.(pdf|txt|md|eml|docx|png|jpe?g|webp)$/i.test(f.name))))return this.status('הקבצים חייבים להיות PDF, DOCX, TXT, EML או תמונה נתמכת.');
       const job={id:crypto.randomUUID(),title:($('#p-agent-title').value.trim()||task.name).slice(0,140),kind,status:'running',created:stamp(),steps:[],draft:'',review:'',checks:[],sourceNames:files.map(f=>f.name)};
       this.selected=job.id;this.busy=true;this.cancelRequested=false;$('#p-agent-start').disabled=true;$('#p-agent-cancel').disabled=false;
       $('#p-agent-output-panel').hidden=true;this.save(job);this.paintSteps(job);this.paint();
