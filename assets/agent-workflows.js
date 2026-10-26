@@ -86,7 +86,7 @@
               <textarea id="p-agent-facts" rows="6" placeholder="הדביקו עובדות ומלל רלוונטי. כדאי לציין מהו מסמך המקור של כל טענה."></textarea>
               <label for="p-agent-file">מסמכי מקור (PDF / DOCX / TXT / EML / תמונות, עד 3)</label>
               <input id="p-agent-file" type="file" multiple accept=".pdf,.docx,.txt,.md,.eml,.png,.jpg,.jpeg,.webp">
-              <div id="p-agent-linked" role="status">אפשר לבחור מסמכים מתוך ״מקורות מידע״ ולהוסיף אותם לתהליך הזה.</div><button type="button" class="premium-action" data-go="sources">אתר קבצים במחשב, Gmail או בטלפון</button><label class="agent-consent"><input id="p-agent-consent" type="checkbox"><span>אני מורשה לעבד את החומר ומבין שתוכן המשימה והקבצים יישלחו לשירות המודל שבו אני משתמש. לא אעלה מידע חסוי בלי לבדוק שמתקיימים תנאי האבטחה והסודיות המתאימים.</span></label>
+              <div id="p-agent-linked" role="status">אפשר לבחור מסמכים מתוך ״מקורות מידע״ ולהוסיף אותם לתהליך הזה.</div><button type="button" class="premium-action" data-go="sources">אתר קבצים במחשב, Gmail או בטלפון</button><button type="button" class="premium-action" id="p-agent-smart-find">חפש לפי פרטי התיק במקורות שאושרו</button><label class="agent-consent"><input id="p-agent-consent" type="checkbox"><span>אני מורשה לעבד את החומר ומבין שתוכן המשימה והקבצים יישלחו לשירות המודל שבו אני משתמש. לא אעלה מידע חסוי בלי לבדוק שמתקיימים תנאי האבטחה והסודיות המתאימים.</span></label>
               <div class="agent-controls"><button id="p-agent-start" class="premium-action primary">התחל תהליך AI</button><button id="p-agent-cancel" class="premium-action" disabled>עצור אחרי השלב הנוכחי</button><button id="p-agent-new" class="premium-action">משימה חדשה</button></div>
               <div id="p-agent-status" class="agent-status" role="status" aria-live="polite"></div>
               <ol class="agent-steps" id="p-agent-steps">
@@ -109,6 +109,10 @@
       $('#s-app .canvas').insertAdjacentHTML('beforeend',views);
       $$('[data-go]', $('#v-home')).concat($$('[data-go]', $('#v-workflows'))).forEach(el=>el.addEventListener('click',()=>Router.to(el.dataset.go)));
       $('#p-agent-start').addEventListener('click',()=>this.run());
+      $('#p-agent-smart-find').addEventListener('click',()=>{
+        if(!window.PRASources){this.status('מודול מקורות מידע אינו זמין.');return;}
+        window.PRASources.suggestFromMatter($('#p-agent-title').value,$('#p-agent-facts').value);
+      });
       $('#p-agent-cancel').addEventListener('click',()=>{if(this.busy){this.cancelRequested=true;this.status('העצירה תתבצע לאחר השלמת קריאת המודל הנוכחית.');}});
       $('#p-agent-new').addEventListener('click',()=>this.newJob());
       $('#p-agent-edit').addEventListener('click',()=>this.edit());
