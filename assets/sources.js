@@ -205,6 +205,20 @@
       const linked=qs('#p-agent-linked');
       if(linked)linked.textContent='קבצים מאושרים ממקורות מידע ('+this.chosen.length+'): '+this.selectedNames().join(' · ')+'. הם יועברו רק אחרי לחיצה על התחלת תהליך ואישור העברת המידע.';
     },
+    suggestFromMatter(title,facts){
+      const nameWords=words(title).filter(x=>x.length>2).slice(0,5);
+      const extra=words(facts).filter(x=>x.length>3&&!nameWords.includes(x)).slice(0,3);
+      const terms=[...nameWords,...extra];
+      Router.to('sources');
+      if(!terms.length){this.say('הזינו קודם שם תיק או עובדות בתהליך ה־AI, ואז הפעילו חיפוש אוטומטי.');return;}
+      const query=terms.join(' ');qs('#p-src-query').value=query;
+      if(this.index.length)this.search();
+      else this.say('מילות החיפוש הוכנו: '+query+'. תחילה בחרו תיקייה, ולאחר מכן החיפוש יפעל בתוך התיקייה שאושרה.');
+      if(this.gmailToken&&this.gmailExpires>Date.now()){
+        qs('#p-src-gmail-query').value=terms.slice(0,4).join(' ');
+        this.searchGmail();
+      }
+    },
     async googleScript(){
       if(window.google?.accounts?.oauth2)return;
       await new Promise((resolve,reject)=>{
