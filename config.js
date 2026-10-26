@@ -21,6 +21,12 @@ window.PRA_CONFIG = {
   // Enable only after Google OAuth is configured in this Supabase project.
   googleSignInEnabled: false,
 
+  // Public OAuth client ID for optional Gmail read-only connector.
+  // Requires Google's OAuth app configuration, authorized JS origin,
+  // restricted-scope verification and user's explicit consent.
+  // NEVER put a client secret or refresh token in this file.
+  gmailOAuthClientId: "",
+
   // Used only by the back office to show model cost in shekels
   usdToIls: 3.7
 };
