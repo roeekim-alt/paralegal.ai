@@ -61,6 +61,19 @@
 #s-app .pl-guide,#s-app .pl-results,#s-app .diary-card{border-color:rgba(198,213,231,.22);}
 #s-app .drawer{background:#0a1b33;}
 #s-app :focus-visible{outline:2px solid #efc17c;outline-offset:2px;}
+/* Light-colored information panels need their own dark foreground.
+   In particular #pl-guide inherited the navy dashboard's nearly-white text. */
+#s-app #pl-guide {
+  background: #fffdf8;
+  color: #17263b;
+  border: 1px solid #d6dbe2;
+  border-right: 4px solid #c99a55;
+  line-height: 1.85;
+  overflow-wrap: anywhere;
+}
+#s-app #pl-guide * { color: inherit; }
+#s-app .ws-meta { color: #17263b; }
+
 /* Legal sheets always stay white: legibility, export and court formatting are unaffected. */
 #s-app .sheet-doc,#s-app .pl-page{background:#fffdf9;color:#111!important;}
 #s-app #doc-scroll{background:#101d2e;}
