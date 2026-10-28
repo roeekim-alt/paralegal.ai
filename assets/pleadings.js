@@ -64,8 +64,19 @@ const Pleadings = {
     VIEW_TITLE.pleadings='כתבי בי־דין';
     const nav=document.createElement('button');nav.className='rail-btn';nav.dataset.view='pleadings';nav.setAttribute('aria-label','כתבי בי־דין');nav.innerHTML=svg('file')+'<span class="rail-label">כתבי בי־דין</span>';$('.rail-seal').after(nav);nav.onclick=()=>Router.to('pleadings');
     const entry=document.createElement('button');entry.className='btn btn-green';entry.textContent='כתבי בי־דין · חדש';entry.onclick=()=>Router.to('pleadings');$('#v-draft .ws-actions').prepend(entry);
-    $('.canvas').insertAdjacentHTML('beforeend',`<section class="view" id="v-pleadings"><div class="scroller"><div class="pad measure-wide" dir="rtl"><div class="vhead"><p>PARALEGAL / ליטיגציה אזרחית</p><h2>מהתשתית העובדתית לכתב בי־דין</h2><p>בחירת מסמך, פרטי ההליך, ניסוח ובדיקת עימוד. הטיוטה נשמרת במסמכים שלי.</p></div><form id="pl-form"><div class="row2"><div class="field"><label for="pl-type">סוג המסמך</label><select id="pl-type" class="inp">${this.types.map(t=>`<option value="${t[0]}">${t[1]}</option>`).join('')}</select></div><div class="field"><label for="pl-level">ערכאה</label><select id="pl-level" class="inp"><option value="magistrate">שלום</option><option value="district">מחוזי</option><option value="supreme">עליון — ערעורים ובקשות</option></select></div><div class="field"><label for="pl-track">מסלול / עניין</label><select id="pl-track" class="inp"><option value="regular">אזרחי רגיל</option><option value="fast">דיון מהיר</option><option value="eviction">פינוי מושכר</option><option value="injury">נזק גוף</option><option value="traffic">פלת״ד</option></select></div><div class="field"><label for="pl-amount">סכום תביעה כספית בש״ח (לסיווג ההיקף)</label><input id="pl-amount" class="inp" type="number" min="0" step="any"></div></div><div id="pl-guide" class="pl-guide"></div><div class="row2">${this.fields.map(([id,label,required])=>`<div class="field"><label for="pl-${id}">${label}${required?' *':''}</label><textarea class="inp" id="pl-${id}" rows="${['facts','grounds'].includes(id)?6:3}" ${required?'required':''}></textarea></div>`).join('')}</div><div class="field"><label for="pl-override">מגבלת עמודים אחרת לפי החלטה — לגוף / לתמצית (רשות)</label><input id="pl-override" class="inp" type="number" min="1" max="200"><p class="ws-note">יש לפרט את ההחלטה לעיל. שינוי ההיקף של חלקים נוספים ייבדק ידנית.</p></div><p class="ws-note">צרפו את תוכן המסמכים הדרושים בשדות המתאימים. פרטי ההליך נשלחים לשירות ה־AI הקיים בעת יצירה. שדות חסרים יסומנו להשלמה; אין המצאת עובדות או אסמכתאות.</p><div class="ws-actions"><button type="submit" class="btn btn-green" id="pl-generate">יצירת טיוטה משפטית</button><button type="button" class="btn btn-outline" id="pl-skeleton">פתיחת תבנית למילוי ידני</button></div><p id="pl-status" role="status" aria-live="polite"></p></form></div></div></section>`);
+    $('.canvas').insertAdjacentHTML('beforeend',`<section class="view" id="v-pleadings"><div class="scroller"><div class="pad measure-wide" dir="rtl"><div class="vhead"><p>PARALEGAL / ליטיגציה אזרחית</p><h2>מהתשתית העובדתית לכתב בי־דין</h2><p>בחירת מסמך, פרטי ההליך, ניסוח ובדיקת עימוד. הטיוטה נשמרת במסמכים שלי.</p></div><form id="pl-form"><div class="row2"><div class="field"><label for="pl-type">סוג המסמך</label><select id="pl-type" class="inp">${this.types.map(t=>`<option value="${t[0]}">${t[1]}</option>`).join('')}</select></div><div class="field"><label for="pl-level">ערכאה</label><select id="pl-level" class="inp"><option value="magistrate">שלום</option><option value="district">מחוזי</option><option value="supreme">עליון — ערעורים ובקשות</option></select></div><div class="field"><label for="pl-track">מסלול / עניין</label><select id="pl-track" class="inp"><option value="regular">אזרחי רגיל</option><option value="fast">דיון מהיר</option><option value="eviction">פינוי מושכר</option><option value="injury">נזק גוף</option><option value="traffic">פלת״ד</option></select></div><div class="field"><label for="pl-amount">סכום תביעה כספית בש״ח (לסיווג ההיקף)</label><input id="pl-amount" class="inp" type="number" min="0" step="any"></div></div><div id="pl-guide" class="pl-guide"></div>
+    <div id="pl-ai-box" class="pl-ai-box">
+      <p id="pl-ai-connection" role="status" aria-live="polite"></p>
+      <div class="ws-actions" style="margin:10px 0 0">
+        <button type="button" class="btn btn-outline" id="pl-ai-settings">הגדרות מפתח Anthropic</button>
+        <button type="button" class="btn btn-outline" id="pl-ai-test">בדיקת חיבור</button>
+      </div>
+    </div><div class="row2">${this.fields.map(([id,label,required])=>`<div class="field"><label for="pl-${id}">${label}${required?' *':''}</label><textarea class="inp" id="pl-${id}" rows="${['facts','grounds'].includes(id)?6:3}" ${required?'required':''}></textarea></div>`).join('')}</div><div class="field"><label for="pl-override">מגבלת עמודים אחרת לפי החלטה — לגוף / לתמצית (רשות)</label><input id="pl-override" class="inp" type="number" min="1" max="200"><p class="ws-note">יש לפרט את ההחלטה לעיל. שינוי ההיקף של חלקים נוספים ייבדק ידנית.</p></div><p class="ws-note">צרפו את תוכן המסמכים הדרושים בשדות המתאימים. פרטי ההליך נשלחים לשירות ה־AI הקיים בעת יצירה. שדות חסרים יסומנו להשלמה; אין המצאת עובדות או אסמכתאות.</p><div class="ws-actions"><button type="submit" class="btn btn-green" id="pl-generate">יצירת טיוטה משפטית</button><button type="button" class="btn btn-outline" id="pl-skeleton">פתיחת תבנית למילוי ידני</button></div><p id="pl-status" role="status" aria-live="polite"></p></form></div></div></section>`);
     $('#pl-form').onsubmit=e=>{e.preventDefault();this.generate();};$('#pl-skeleton').onclick=()=>this.skeleton();
+    $('#pl-ai-settings').onclick=()=>Keys.open();
+    $('#pl-ai-test').onclick=()=>this.testConnection();
+    window.addEventListener('pra:ai-key-change',()=>this.refreshAiStatus());
+    this.refreshAiStatus();
     for(const id of ['type','level','track','amount','override'])$('#pl-'+id).addEventListener('change',()=>this.updateGuide());this.updateGuide();
     $('.ws-aside').insertAdjacentHTML('afterbegin','<section id="pl-tools" hidden><h3>בדיקת כתב בי־דין</h3><p class="ws-note">David 12 · A4 · שוליים 2.5 ס״מ · ריווח 1.5</p><button class="btn btn-green" id="pl-check">בדיקה ותצוגת עמודים</button><button class="tool" id="pl-annex">הוספת נספח טקסט</button><p class="ws-note">נספחי טקסט בלבד. מסמכים מקוריים, סריקות ו־PDF יש לצרף ולאמת בנפרד; ספירתם אינה כלולה כאן.</p><div id="pl-results" role="status"></div></section>');
     $('#pl-check').onclick=()=>this.preview();$('#pl-annex').onclick=()=>this.annex();
@@ -76,11 +87,38 @@ const Pleadings = {
     const pdf=Doc.pdf.bind(Doc);Doc.pdf=()=>App.doc.court?this.preview():pdf();
   },
   updateGuide(){const d=this.collect(),p=this.profile(d);$('#pl-guide').textContent=this.guidance(d)+'\nהיקף: '+p.parts.map(s=>s.name+' — '+(s.limit?s.limit+' עמודים':'ללא מגבלה מוגדרת כאן')).join(' | ');},
+  refreshAiStatus(){
+    const el=$('#pl-ai-connection');if(!el)return;
+    if(App.key())el.textContent='מפתח Anthropic אישי שמור בדפדפן הזה. לחצו על ״בדיקת חיבור״ כדי לוודא שהוא פעיל. יצירת כתב בי־דין תשתמש במפתח הזה.';
+    else if(Account.hosted())el.textContent='חיבור AI דרך מנוי PRA Legal פעיל. ניתן לבדוק את החיבור לפני יצירת מסמך.';
+    else el.textContent='אין מפתח Anthropic זמין באתר הזה. גם אם מפתח קיים אצל Anthropic או נשמר באתר אחר, הדביקו ושמרו אותו בהגדרות כאן. פרטי הטופס לא יימחקו.';
+  },
+  async testConnection(){
+    if(!App.hasKey()){
+      $('#pl-status').textContent='אין מפתח זמין בדפדפן הזה. פתחו את ההגדרות והזינו מפתח Anthropic.';
+      Keys.open();return;
+    }
+    const button=$('#pl-ai-test');
+    button.disabled=true;button.textContent='בודק חיבור…';
+    $('#pl-status').textContent='מבצע בדיקה קצרה של החיבור ל־Anthropic…';
+    try{
+      await Api.send({max:24,model:MODEL,feature:'connection-test',messages:[{role:'user',content:'Reply with OK only.'}]});
+      $('#pl-status').textContent='החיבור תקין. אפשר ללחוץ על ״יצירת טיוטה משפטית״.';
+      this.refreshAiStatus();
+    }catch(e){
+      $('#pl-status').textContent='בדיקת החיבור נכשלה: '+(e.message||'שגיאה לא ידועה')+'. המפתח השמור לא נמחק.';
+    }finally{button.disabled=false;button.textContent='בדיקת חיבור';}
+  },
   header(d,p){return '<p>'+esc(d.court||'[בית המשפט]')+'</p><p>מספר תיק: '+esc(d.case||'[מספר תיק]')+'</p><p>'+esc(d.parties||'[פרטי הצדדים]')+'</p><p>'+esc(d.counsel||'[באי כוח]')+'</p><p>'+esc(d.dates||'[מועדי הגשה והמצאה]')+'</p><h1>'+esc(d.claimtype||p.title)+'</h1>';},
   open(data,sections){const profile=this.profile(data);const html=sections.map((s,i)=>'<h2>'+esc(profile.parts[i].name)+'</h2>'+s).join('');Workspace.show({title:profile.title+' — '+(data.case||'טיוטה'),html,dir:'rtl',kind:'Court pleading',court:{version:1,data,profile,annexes:[]}});},
   skeleton(){if(Workspace.active&&!Workspace.save(true))return;const d=this.collect(),p=this.profile(d);this.open(d,p.parts.map((s,i)=>i===0?this.header(d,p):'<p>[יש להשלים '+esc(s.name)+' בהתאם להנחיות לסוג המסמך]</p>'));},
   async generate(){
-    if(App.busy)return;if(!App.hasKey()){Keys.open();return;}if(Workspace.active&&!Workspace.save(true))return;
+    if(App.busy)return;
+    if(!App.hasKey()){
+      $('#pl-status').textContent='לא זוהה חיבור Anthropic באתר הנוכחי. פתחו את הגדרות המפתח, הדביקו ושמרו מפתח. פרטי הטופס לא יימחקו.';
+      this.refreshAiStatus();Keys.open();return;
+    }
+    if(Workspace.active&&!Workspace.save(true))return;
     const d=this.collect(),p=this.profile(d);if(['claim','defence'].includes(p.family)&&d.level==='supreme'){toast('בחרו שלום או מחוזי לכתב תביעה / הגנה','bad');return;}
     if(d.override&&!d.order){toast('יש להזין את ההחלטה המתירה שינוי בהיקף','bad');return;}
     $('#pl-generate').disabled=true;working(true);$('#pl-status').textContent='מנסח לפי סוג המסמך והפרטים שסופקו…';
