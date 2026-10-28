@@ -1453,7 +1453,7 @@ select.inp{
       <div class="field">
         <input class="inp" id="key-anthropic" type="password" spellcheck="false" autocomplete="off" placeholder="sk-ant-api03-…" style="font-size:13px">
         <div class="field-hint">
-          Create one at <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--ledger)">console.anthropic.com/settings/keys</a> — it's shown once, so copy it straight away.
+          המפתח נשמר בדפדפן ובכתובת אתר זו בלבד. אם הוגדר באתר אחר צריך להזין אותו כאן. <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener" style="color:var(--ledger)">ניהול מפתחות Anthropic</a>. שימוש במפתח אישי מחויב לחשבונך. אל תשלחו מפתחות בצ'אט.
         </div>
       </div>
       <button class="btn btn-outline" data-act="keys-test" id="btn-test" style="width:100%;padding:10px;margin-bottom:var(--s5)">Check the key works</button>
@@ -1595,13 +1595,17 @@ const App = {
   busy: false,
   bpLang: 'he',
 
-  key(){ return String(Store.read(KEYS.anthropic, '') || '').trim(); },
-  /* Can this user make a model call right now? Either their plan includes
-     hosted drafting, or they have put in their own Anthropic key. */
+  key(){
+    const raw = String(Store.read(KEYS.anthropic, '') || '').trim();
+    // Handle legacy JSON-quoted storage without ever logging a secret.
+    if(raw.startsWith('"') && raw.endsWith('"')){
+      try{const key=JSON.parse(raw);if(typeof key==='string')return key.trim();}catch{}
+    }
+    return raw;
+  },
   hasKey(){
-    if (typeof Account !== 'undefined' && Account.hosted()) return true;
-    const k = this.key();
-    return !!(k && k.length > 20);
+    // Treat a stored key as configured; validity is tested against Anthropic.
+    return !!this.key() || (typeof Account !== 'undefined' && Account.hosted());
   },
 
   load(){
@@ -2043,7 +2047,10 @@ const Api = {
       system:     opts.system || undefined,
       messages:   opts.messages
     };
-    const viaProxy = !opts.key && Account.hosted();
+    // An explicitly saved personal key takes precedence over hosted routing.
+    // This avoids ignoring the user's key when the hosted proxy is misconfigured.
+    const personalKey = String(opts.key || App.key() || '').trim();
+    const viaProxy = !personalKey && Account.hosted();
     if(opts.onProgress && !viaProxy)payload.stream=true;
     let res;
 
@@ -2059,12 +2066,10 @@ const Api = {
         body: JSON.stringify(Object.assign({}, payload, { feature: opts.feature || null }))
       });
     } else {
-      const key = opts.key || App.key();
+      const key = personalKey;
       if (!key){
         Keys.open();
-        throw new Error(Account.enabled
-          ? 'Choose a plan that includes drafting, or add your own Anthropic key.'
-          : 'Add your Anthropic key in settings first.');
+        throw new Error('לא נמצא מפתח Anthropic בדפדפן ובכתובת האתר הנוכחיים. פתחו הגדרות, הדביקו ושמרו מפתח אישי או הפעילו מנוי. מפתח שנשמר באתר אחר אינו עובר אוטומטית.');
       }
       res = await this.request(API_URL, {
         method: 'POST',
@@ -3424,7 +3429,7 @@ const Drawer = {
 const Keys = {
   open(){
     $('#keys-scrim').setAttribute('data-on','');
-    $('#key-anthropic').value = Store.read(KEYS.anthropic, '') || '';
+    $('#key-anthropic').value = App.key();
     $('#key-eleven').value    = Store.read(KEYS.eleven, '') || '';
     $('#key-voice').value     = Store.read(KEYS.voice, '') || '';
     this.sync();
@@ -3439,7 +3444,7 @@ const Keys = {
     const a = $('#state-anthropic');
     if (a){
       const on = App.hasKey();
-      a.textContent = on ? 'Set' : 'Not set';
+      a.textContent = App.key() ? 'Personal key saved' : on ? 'Hosted plan connected' : 'Not configured';
       a.dataset.state = on ? 'on' : 'off';
     }
     const e = $('#state-eleven');
@@ -3451,18 +3456,19 @@ const Keys = {
   },
 
   save(){
-    const key = val('key-anthropic');
-    if (key && key.length < 20){ toast('That key looks too short to be real', 'bad'); return; }
-    if (key) Store.write(KEYS.anthropic, key); else Store.drop(KEYS.anthropic);
-
-    const el = val('key-eleven');
-    const vo = val('key-voice');
-    if (el) Store.write(KEYS.eleven, el); else Store.drop(KEYS.eleven);
-    if (vo) Store.write(KEYS.voice, vo); else Store.drop(KEYS.voice);
-
-    this.sync();
-    this.close();
-    toast(key ? 'Saved' : 'Key removed');
+    const key=val('key-anthropic');
+    if(key && key.length < 20){toast('המפתח נראה קצר מדי. העתיקו מפתח API מלא מ־Anthropic Console.','bad');return false;}
+    if(key && (!Store.write(KEYS.anthropic,key) || App.key()!==key)){
+      toast('המפתח לא נשמר. ייתכן שהדפדפן חוסם אחסון מקומי.','bad');return false;
+    }
+    // Leaving a field blank never silently destroys a previously saved key.
+    const el=val('key-eleven'),vo=val('key-voice');
+    if(el)Store.write(KEYS.eleven,el);else Store.drop(KEYS.eleven);
+    if(vo)Store.write(KEYS.voice,vo);else Store.drop(KEYS.voice);
+    this.sync();this.close();
+    window.dispatchEvent(new Event('pra:ai-key-change'));
+    toast(key?'המפתח נשמר בדפדפן זה. ניתן להמשיך ביצירת כתב בי־דין.':App.key()?'המפתח הקיים נשמר ללא שינוי.':'לא הוזן מפתח Anthropic.');
+    return true;
   },
 
   async test(){
@@ -3472,8 +3478,10 @@ const Keys = {
     btn.textContent = 'בודק חיבור למודל ההסכמים…'; btn.disabled = true;
     try {
       await Api.send({key, model:MODEL, max:32, messages:[{role:'user',content:'Reply with OK only.'}]});
-      Store.write(KEYS.anthropic, key); this.sync();
-      toast('החיבור למודל ההסכמים תקין — המפתח נשמר');
+      if(!Store.write(KEYS.anthropic,key)||App.key()!==key)throw Error('מפתח תקין, אבל לא ניתן לשמור אותו בדפדפן. בדקו הרשאות אחסון.');
+      this.sync();
+      window.dispatchEvent(new Event('pra:ai-key-change'));
+      toast('החיבור ל־Anthropic תקין והמפתח נשמר. ניתן להמשיך ביצירת כתב בי־דין.');
     } catch(err){ toast(err.message, 'bad'); }
     finally { btn.textContent = label; btn.disabled = false; }
   },
@@ -3680,8 +3688,8 @@ else boot();
 <link rel="stylesheet" href="./assets/generation.css">
 <script src="./assets/generation.js"></script>
 <link rel="stylesheet" href="./assets/pleadings.css">
-<script src="./assets/pleadings.js"></script>
-<link rel="stylesheet" href="./assets/premium.css?v=20261028-contrast">
+<script src="./assets/pleadings.js?v=20261028-api-fix"></script>
+<link rel="stylesheet" href="./assets/premium.css?v=20261028-api-fix">
 <script src="./assets/agent-workflows.js?v=20261026"></script>
 <link rel="stylesheet" href="./assets/sources.css?v=20261026">
 <script src="./assets/sources.js?v=20261026"></script>
